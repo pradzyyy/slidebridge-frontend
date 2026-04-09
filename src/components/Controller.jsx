@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, onSnapshot, arrayRemove, arrayUnion } from "firebase/firestore";
-import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff, Lock, Unlock, Users, User } from 'lucide-react';
+import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff, Lock, Unlock, Users, User, AlertTriangle } from 'lucide-react';
 
 const Controller = ({ sessionId }) => {
     const [session, setSession] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [status, setStatus] = useState("");
 
-    // --- NEW: POPUP STATE ---
-    // If they typed their name on the landing page, it skips the popup. Otherwise, it shows.
+    // --- UI STATES ---
     const urlName = new URLSearchParams(window.location.search).get('name');
     const [userName, setUserName] = useState(urlName || "");
     const [isNameConfirmed, setIsNameConfirmed] = useState(!!urlName);
+    const [isLockedOut, setIsLockedOut] = useState(false); // Replaces the ugly alert()
+    const [fileToDelete, setFileToDelete] = useState(null); // Replaces the ugly confirm()
+
     const hasJoined = useRef(false);
 
     const CLOUD_NAME = "dhkeim8bf";
@@ -26,16 +28,14 @@ const Controller = ({ sessionId }) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
 
-                // THE BOUNCER: Kick out if locked (even if they are looking at the popup)
+                // THE BOUNCER: Show custom lockout screen instead of alert()
                 if (data.isLocked && !hasJoined.current) {
-                    alert("This room has been locked by the host.");
-                    window.location.href = '/';
+                    setIsLockedOut(true);
                     return;
                 }
 
                 setSession(data);
 
-                // REGISTER PRESENCE: Only add them AFTER they pass the popup
                 if (isNameConfirmed && !hasJoined.current) {
                     hasJoined.current = true;
                     updateDoc(sessionRef, { connectedUsers: arrayUnion(userName) });
@@ -49,7 +49,7 @@ const Controller = ({ sessionId }) => {
             }
             unsub();
         };
-    }, [sessionId, isNameConfirmed, userName]); // Added isNameConfirmed as a dependency
+    }, [sessionId, isNameConfirmed, userName]);
 
     const toggleLock = async () => {
         await updateDoc(doc(db, "sessions", sessionId), { isLocked: !session?.isLocked });
@@ -108,10 +108,18 @@ const Controller = ({ sessionId }) => {
 
     const stopDisplay = async () => { await updateDoc(doc(db, "sessions", sessionId), { activeFile: null }); };
 
-    const deleteFile = async (e, file) => {
+    // --- NEW: Custom Delete Logic ---
+    const promptDelete = (e, file) => {
         e.stopPropagation();
-        if (!window.confirm(`Delete ${file.name}?`)) return;
-        try { await updateDoc(doc(db, "sessions", sessionId), { files: arrayRemove(file) }); } catch (err) { console.error(err); }
+        setFileToDelete(file); // Opens the modal instead of browser confirm
+    };
+
+    const confirmDelete = async () => {
+        if (!fileToDelete) return;
+        try {
+            await updateDoc(doc(db, "sessions", sessionId), { files: arrayRemove(fileToDelete) });
+            setFileToDelete(null); // Close modal on success
+        } catch (err) { console.error(err); }
     };
 
     const presentFile = async (file) => { await updateDoc(doc(db, "sessions", sessionId), { activeFile: file, activePage: 1, totalPages: null }); };
@@ -129,10 +137,61 @@ const Controller = ({ sessionId }) => {
         return file.url.replace('/upload/', `/upload/w_600,pg_${page || 1}/`).replace('.pdf', '.jpg');
     };
 
+    // --- RENDER EARLY RETURN: The Custom Lockout Screen ---
+    if (isLockedOut) {
+        return (
+            <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-6 selection:bg-indigo-500/30">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-900/10 via-neutral-950 to-neutral-950 pointer-events-none"></div>
+                <div className="z-10 w-full max-w-sm bg-neutral-900 border border-white/10 p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
+                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                        <Lock size={32} className="text-red-500" />
+                    </div>
+                    <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Room Locked</h2>
+                    <p className="text-sm text-neutral-400 font-medium text-center mb-8">The host has secured this session. No new remotes can connect.</p>
+                    <button
+                        onClick={() => window.location.href = '/'}
+                        className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-2xl transition-all border border-white/10 tracking-wide"
+                    >
+                        RETURN TO HOME
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col font-sans overflow-x-hidden selection:bg-indigo-500/30">
 
-            {/* --- NEW: THE NAME ENTRY POPUP --- */}
+            {/* --- CUSTOM DELETE CONFIRMATION MODAL --- */}
+            {fileToDelete && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+                    <div className="w-full max-w-sm bg-neutral-900 border border-white/10 p-6 rounded-[2rem] shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
+                            <AlertTriangle size={24} className="text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-black text-white mb-1">Delete File?</h3>
+                        <p className="text-xs text-neutral-400 text-center mb-6 px-4">
+                            Are you sure you want to remove <span className="text-white font-bold">{fileToDelete.name}</span>? This will remove it from the big screen as well.
+                        </p>
+                        <div className="flex gap-3 w-full">
+                            <button
+                                onClick={() => setFileToDelete(null)}
+                                className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all border border-white/10 text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-red-600/20 text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- THE NAME ENTRY POPUP --- */}
             {!isNameConfirmed && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-xl">
                     <div className="w-full max-w-sm bg-neutral-900 border border-white/10 p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
@@ -168,8 +227,8 @@ const Controller = ({ sessionId }) => {
                 </div>
             )}
 
-            {/* Everything below this is blurred and unclickable until the popup is cleared */}
-            <div className={`flex flex-col flex-1 transition-all duration-500 ${!isNameConfirmed ? 'opacity-30 blur-sm pointer-events-none' : 'opacity-100'}`}>
+            {/* Everything below this is blurred if a popup is active */}
+            <div className={`flex flex-col flex-1 transition-all duration-500 ${(!isNameConfirmed || fileToDelete) ? 'opacity-30 blur-sm pointer-events-none' : 'opacity-100'}`}>
                 {uploading && (
                     <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-indigo-500/90 backdrop-blur-xl border border-indigo-400/30 px-6 py-3 rounded-full flex items-center gap-3 shadow-2xl shadow-indigo-500/20">
                         <Loader2 size={16} className="animate-spin text-white" />
@@ -230,9 +289,12 @@ const Controller = ({ sessionId }) => {
                                 <div className="absolute inset-0 flex items-center justify-center opacity-30">
                                     {file.type.includes('image') ? <img src={file.url} className="w-full h-full object-cover" /> : file.type.includes('pdf') ? <FileText size={32} className="text-neutral-400" /> : <PlayCircle size={32} className="text-neutral-400" />}
                                 </div>
-                                <button onClick={(e) => deleteFile(e, file)} className="absolute top-3 right-3 p-2.5 bg-black/40 hover:bg-red-500/80 rounded-full backdrop-blur-md transition-colors z-10">
+
+                                {/* UPDATED TRASH BUTTON - NOW CALLS promptDelete */}
+                                <button onClick={(e) => promptDelete(e, file)} className="absolute top-3 right-3 p-2.5 bg-black/40 hover:bg-red-500/80 rounded-full backdrop-blur-md transition-colors z-10">
                                     <Trash2 size={14} className="text-white" />
                                 </button>
+
                                 <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black via-black/80 to-transparent">
                                     <p className="text-[11px] font-medium text-white truncate tracking-wide">{file.name}</p>
                                 </div>

@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Controller from './components/Controller';
 import DisplayScreen from './components/DisplayScreen';
 import { MonitorPlay, Smartphone, ArrowRight, User } from 'lucide-react';
+import { db } from './firebase';
+import { doc, getDoc } from "firebase/firestore";
 
 const App = () => {
   const [mode, setMode] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [joinCode, setJoinCode] = useState("");
   const [userName, setUserName] = useState("");
+  const [joinError, setJoinError] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -21,10 +24,34 @@ const App = () => {
     window.location.href = `?sid=${code}&mode=display`;
   };
 
-  const joinScreen = (e) => {
+  const joinScreen = async (e) => {
     e.preventDefault();
-    if (joinCode.trim().length > 0 && userName.trim().length > 0) {
-      window.location.href = `?sid=${joinCode.trim().toUpperCase()}&mode=mobile&name=${encodeURIComponent(userName.trim())}`;
+    setJoinError("");
+
+    const code = joinCode.trim().toUpperCase();
+    const name = userName.trim();
+
+    if (code.length === 6 && name.length > 0) {
+      try {
+        // Check the database BEFORE trying to join
+        const docRef = doc(db, "sessions", code);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          setJoinError("Room does not exist");
+          return;
+        }
+
+        if (docSnap.data().isLocked) {
+          setJoinError("Room is locked by host");
+          return;
+        }
+
+        // If it exists and is open, proceed
+        window.location.href = `?sid=${code}&mode=mobile&name=${encodeURIComponent(name)}`;
+      } catch (err) {
+        setJoinError("Connection error");
+      }
     }
   };
 
@@ -82,10 +109,10 @@ const App = () => {
               type="text"
               placeholder="ENTER 6-DIGIT CODE"
               value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
+              onChange={(e) => { setJoinCode(e.target.value); setJoinError(""); }}
               maxLength={6}
               required
-              className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-600 pl-12 pr-24 font-black text-xl tracking-[0.3em] uppercase py-4 rounded-2xl focus:outline-none focus:border-indigo-500 focus:bg-indigo-500/5 transition-all backdrop-blur-md"
+              className={`w-full bg-white/5 border text-white placeholder-neutral-600 pl-12 pr-24 font-black text-xl tracking-[0.3em] uppercase py-4 rounded-2xl focus:outline-none transition-all backdrop-blur-md ${joinError ? 'border-red-500/50 bg-red-500/5 focus:border-red-500' : 'border-white/10 focus:border-indigo-500 focus:bg-indigo-500/5'}`}
             />
             <button
               type="submit"
@@ -94,6 +121,13 @@ const App = () => {
             >
               JOIN
             </button>
+
+            {/* The Inline Error Message */}
+            {joinError && (
+              <div className="absolute -bottom-6 left-0 right-0 text-center animate-in fade-in slide-in-from-top-1">
+                <span className="text-[10px] font-bold text-red-500 tracking-widest uppercase">{joinError}</span>
+              </div>
+            )}
           </div>
         </form>
       </div>
