@@ -104,17 +104,31 @@ const DisplayScreen = ({ sessionId }) => {
             )}
 
             {sessionData?.connectedUsers?.length > 0 && (
-                <div className="bg-[#111]/80 border border-white/10 backdrop-blur-2xl px-6 py-5 rounded-3xl flex flex-col gap-3 min-w-[200px] shadow-2xl">
-                    <div className="flex items-center gap-2 mb-2 border-b border-white/5 pb-3">
-                        <Users size={16} className="text-indigo-400" />
-                        <span className="text-[10px] font-black text-neutral-500 tracking-widest uppercase">Remotes</span>
-                    </div>
-                    {sessionData.connectedUsers.map((user, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse"></div>
-                            <span className="text-sm font-bold text-white tracking-wide">{user}</span>
+                <div className="group relative flex flex-col items-end">
+                    {/* The Expanding Container */}
+                    <div className="bg-[#111]/80 border border-white/10 backdrop-blur-2xl rounded-full group-hover:rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col max-h-14 group-hover:max-h-[400px] w-14 group-hover:w-56 cursor-default">
+
+                        {/* Header Area (Fixed width prevents text jumping during animation) */}
+                        <div className="flex items-center gap-4 p-4 border-b border-transparent group-hover:border-white/5 transition-colors w-56">
+                            <Users size={24} className="text-indigo-400 shrink-0" />
+                            <span className="text-[10px] font-black text-neutral-500 tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Remotes
+                            </span>
                         </div>
-                    ))}
+
+                        {/* List Area */}
+                        <div className="flex flex-col gap-4 px-6 pb-6 pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 w-56">
+                            {sessionData.connectedUsers.map((user, idx) => (
+                                <div key={idx} className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse shrink-0"></div>
+                                    <span className="text-sm font-bold text-white tracking-wide truncate">{user}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Little notification dot that shows when collapsed, hides on hover */}
+                    <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-indigo-500 rounded-full border-2 border-[#050505] group-hover:scale-0 transition-transform duration-300 pointer-events-none"></div>
                 </div>
             )}
         </div>
