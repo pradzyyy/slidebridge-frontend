@@ -17,7 +17,7 @@ const DisplayScreen = ({ sessionId }) => {
     const [sessionData, setSessionData] = useState(null);
     const [numPages, setNumPages] = useState(null);
 
-    const controllerUrl = `${window.location.origin}?scan=${sessionId}`;
+    const controllerUrl = `${window.location.origin}?sid=${sessionId}&mode=mobile`;
 
     useEffect(() => {
         const sessionRef = doc(db, "sessions", sessionId);
