@@ -13,6 +13,7 @@ const App = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('sid')) setSessionId(params.get('sid'));
     if (params.get('mode')) setMode(params.get('mode'));
+    if (params.get('scan')) setJoinCode(params.get('scan'));
   }, []);
 
   const createScreen = () => {
@@ -22,9 +23,8 @@ const App = () => {
 
   const joinScreen = (e) => {
     e.preventDefault();
-    if (joinCode.trim().length > 0) {
-      const nameToUse = userName.trim() || "Anonymous";
-      window.location.href = `?sid=${joinCode.trim().toUpperCase()}&mode=mobile&name=${encodeURIComponent(nameToUse)}`;
+    if (joinCode.trim().length > 0 && userName.trim().length > 0) {
+      window.location.href = `?sid=${joinCode.trim().toUpperCase()}&mode=mobile&name=${encodeURIComponent(userName.trim())}`;
     }
   };
 
@@ -69,6 +69,7 @@ const App = () => {
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               maxLength={15}
+              required
               className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-600 pl-12 pr-4 font-bold tracking-widest uppercase py-4 rounded-2xl focus:outline-none focus:border-indigo-500 focus:bg-indigo-500/5 transition-all backdrop-blur-md"
             />
           </div>
@@ -88,7 +89,7 @@ const App = () => {
             />
             <button
               type="submit"
-              className={`absolute inset-y-2 right-2 px-6 rounded-xl font-bold text-sm tracking-widest transition-all ${joinCode.length === 6 ? 'bg-white text-black hover:bg-indigo-500 hover:text-white shadow-lg' : 'bg-transparent text-transparent pointer-events-none'
+              className={`absolute inset-y-2 right-2 px-6 rounded-xl font-bold text-sm tracking-widest transition-all ${joinCode.length === 6 && userName.trim().length > 0 ? 'bg-white text-black hover:bg-indigo-500 hover:text-white shadow-lg' : 'bg-transparent text-transparent pointer-events-none'
                 }`}
             >
               JOIN

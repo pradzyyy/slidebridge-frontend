@@ -16,11 +16,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 const DisplayScreen = ({ sessionId }) => {
     const [sessionData, setSessionData] = useState(null);
     const [numPages, setNumPages] = useState(null);
-    const controllerUrl = `${window.location.origin}?sid=${sessionId}&mode=mobile`;
+
+    const controllerUrl = `${window.location.origin}?scan=${sessionId}`;
 
     useEffect(() => {
         const sessionRef = doc(db, "sessions", sessionId);
-        // Initialize the room with default state
         setDoc(sessionRef, { createdAt: Date.now(), status: 'waiting', isLocked: false, connectedUsers: [] }, { merge: true });
 
         const unsubscribe = onSnapshot(sessionRef, (docSnap) => {
@@ -39,7 +39,6 @@ const DisplayScreen = ({ sessionId }) => {
         }
     }, [sessionData?.activePage, sessionData?.activeFile?.url]);
 
-    // Roster UI Component (Used in both Waiting and Active screens)
     const Roster = () => (
         <div className="absolute top-6 right-6 flex flex-col items-end gap-2 z-50">
             {sessionData?.isLocked && (
