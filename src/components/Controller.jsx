@@ -8,9 +8,13 @@ const Controller = ({ sessionId }) => {
     const [uploading, setUploading] = useState(false);
     const [status, setStatus] = useState("");
 
+    // THE FIX: Check for the VIP Wristband in sessionStorage before defaulting to empty
     const urlName = new URLSearchParams(window.location.search).get('name');
-    const [userName, setUserName] = useState(urlName || "");
-    const [isNameConfirmed, setIsNameConfirmed] = useState(!!urlName);
+    const storedName = sessionStorage.getItem(`sb_name_${sessionId}`);
+    const initialName = urlName || storedName || "";
+
+    const [userName, setUserName] = useState(initialName);
+    const [isNameConfirmed, setIsNameConfirmed] = useState(!!initialName);
     const [isLockedOut, setIsLockedOut] = useState(false);
     const [fileToDelete, setFileToDelete] = useState(null);
     const [isEndingSession, setIsEndingSession] = useState(false);
@@ -19,6 +23,13 @@ const Controller = ({ sessionId }) => {
     const CLOUD_NAME = "dhkeim8bf";
     const UPLOAD_PRESET = "jpdqcfpp";
 
+    // THE FIX: Save the name to the VIP Wristband whenever it gets confirmed
+    useEffect(() => {
+        if (isNameConfirmed && userName) {
+            sessionStorage.setItem(`sb_name_${sessionId}`, userName);
+        }
+    }, [isNameConfirmed, userName, sessionId]);
+
     useEffect(() => {
         if (!sessionId) return;
         const sessionRef = doc(db, "sessions", sessionId);
@@ -26,14 +37,24 @@ const Controller = ({ sessionId }) => {
         const unsub = onSnapshot(sessionRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (data.isLocked && !hasJoined.current) {
+
+                // THE FIX: Check if they have a VIP pass from a previous session before bouncing them
+                const hasVipPass = sessionStorage.getItem(`sb_joined_${sessionId}`) === 'true';
+
+                if (data.isLocked && !hasVipPass && !hasJoined.current) {
                     setIsLockedOut(true);
                     return;
                 }
+
                 setSession(data);
-                if (isNameConfirmed && !hasJoined.current) {
-                    hasJoined.current = true;
-                    updateDoc(sessionRef, { connectedUsers: arrayUnion(userName) });
+
+                if (isNameConfirmed) {
+                    if (!hasJoined.current) {
+                        hasJoined.current = true;
+                        sessionStorage.setItem(`sb_joined_${sessionId}`, 'true'); // Give them the VIP Pass
+                    }
+                    // Re-add them to the roster silently if they just refreshed
+                    updateDoc(sessionRef, { connectedUsers: arrayUnion(userName) }).catch(() => { });
                 }
             } else {
                 window.location.href = '/';
@@ -41,7 +62,7 @@ const Controller = ({ sessionId }) => {
         });
 
         return () => {
-            if (hasJoined.current) {
+            if (hasJoined.current && userName) {
                 updateDoc(sessionRef, { connectedUsers: arrayRemove(userName) }).catch(() => console.log("Cleanup skipped"));
             }
             unsub();
@@ -130,7 +151,6 @@ const Controller = ({ sessionId }) => {
         }
     };
 
-    // NEW: We now initialize isPlaying and zoomLevel when a new file starts
     const presentFile = async (file) => {
         await updateDoc(doc(db, "sessions", sessionId), {
             activeFile: file,
@@ -148,17 +168,15 @@ const Controller = ({ sessionId }) => {
         if (newPage !== currentPage) { await updateDoc(doc(db, "sessions", sessionId), { activePage: newPage }); }
     };
 
-    // NEW: Video Control Function
     const togglePlayPause = async () => {
         await updateDoc(doc(db, "sessions", sessionId), { isPlaying: !session?.isPlaying });
     };
 
-    // NEW: Image Zoom Control Function
     const changeZoom = async (amount) => {
         const currentZoom = session?.zoomLevel || 1;
         let newZoom = currentZoom + amount;
-        if (newZoom < 0.5) newZoom = 0.5; // Prevent zooming out too far
-        if (newZoom > 5) newZoom = 5; // Prevent zooming in too far
+        if (newZoom < 0.5) newZoom = 0.5;
+        if (newZoom > 5) newZoom = 5;
         await updateDoc(doc(db, "sessions", sessionId), { zoomLevel: newZoom });
     };
 
@@ -328,12 +346,10 @@ const Controller = ({ sessionId }) => {
                     </div>
                 </div>
 
-                {/* THE SHAPE-SHIFTING REMOTE */}
                 {session?.activeFile && (
                     <div className="fixed bottom-8 left-0 right-0 px-6 flex justify-center z-50 pointer-events-none">
                         <div className="w-full max-w-[340px] bg-[#111]/90 backdrop-blur-3xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] pointer-events-auto">
 
-                            {/* PDF CONTROLS */}
                             {session.activeFile.type.includes('pdf') && (
                                 <>
                                     <button onClick={() => changePage(-1)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex items-center justify-center active:scale-90 transition-all">
@@ -352,7 +368,6 @@ const Controller = ({ sessionId }) => {
                                 </>
                             )}
 
-                            {/* VIDEO CONTROLS */}
                             {session.activeFile.type.includes('video') && (
                                 <div className="flex-1 flex justify-center w-full px-2">
                                     <button onClick={togglePlayPause} className={`w-full h-16 rounded-full flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg ${session.isPlaying ? 'bg-[#1a1a1a] hover:bg-[#222] text-white border border-white/5' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'}`}>
@@ -362,7 +377,6 @@ const Controller = ({ sessionId }) => {
                                 </div>
                             )}
 
-                            {/* IMAGE CONTROLS */}
                             {session.activeFile.type.includes('image') && (
                                 <>
                                     <button onClick={() => changeZoom(-0.5)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex items-center justify-center active:scale-90 transition-all">
