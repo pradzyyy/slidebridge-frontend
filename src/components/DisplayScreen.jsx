@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebase';
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
-import { MonitorPlay, Loader2, KeyRound, Lock, Users } from "lucide-react";
+import { MonitorPlay, Loader2, KeyRound, Lock, Unlock, Users } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -17,17 +17,23 @@ const DisplayScreen = ({ sessionId }) => {
     const [numPages, setNumPages] = useState(null);
 
     const controllerUrl = `${window.location.origin}?sid=${sessionId}&mode=mobile`;
+    const videoRef = useRef(null); // NEW: Reference to control the video player
 
     useEffect(() => {
         const sessionRef = doc(db, "sessions", sessionId);
         setDoc(sessionRef, { createdAt: Date.now(), status: 'waiting', isLocked: false, connectedUsers: [] }, { merge: true });
 
         const unsubscribe = onSnapshot(sessionRef, (docSnap) => {
-            if (docSnap.exists()) setSessionData(docSnap.data());
+            if (docSnap.exists()) {
+                setSessionData(docSnap.data());
+            } else {
+                window.location.href = '/';
+            }
         });
         return () => unsubscribe();
     }, [sessionId]);
 
+    // PDF Scroll Logic
     useEffect(() => {
         if (sessionData?.activeFile?.type.includes('pdf') && sessionData?.activePage) {
             const pageId = `page-${sessionData.activePage}`;
@@ -38,7 +44,25 @@ const DisplayScreen = ({ sessionId }) => {
         }
     }, [sessionData?.activePage, sessionData?.activeFile?.url]);
 
-    // THE NUCLEAR OPTION: Guaranteed highly visible pure CSS background
+    // NEW: Video Play/Pause Listener
+    useEffect(() => {
+        if (videoRef.current) {
+            if (sessionData?.isPlaying) {
+                videoRef.current.play().catch(e => console.log("Auto-play prevented by browser", e));
+            } else {
+                videoRef.current.pause();
+            }
+        }
+    }, [sessionData?.isPlaying, sessionData?.activeFile]);
+
+    const forceUnlockRoom = async () => {
+        try {
+            await updateDoc(doc(db, "sessions", sessionId), { isLocked: false });
+        } catch (err) {
+            console.error("Failed to unlock room:", err);
+        }
+    };
+
     const AnimatedBackground = () => (
         <>
             <style>{`
@@ -97,18 +121,22 @@ const DisplayScreen = ({ sessionId }) => {
     const Roster = () => (
         <div className="absolute top-8 right-8 flex flex-col items-end gap-3 z-50">
             {sessionData?.isLocked && (
-                <div className="bg-red-500/10 border border-red-500/30 backdrop-blur-2xl px-5 py-2.5 rounded-full flex items-center gap-2.5 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                    <Lock size={14} />
-                    <span className="text-[10px] font-black tracking-widest uppercase">Room Locked</span>
-                </div>
+                <button
+                    onClick={forceUnlockRoom}
+                    className="bg-red-500/10 border border-red-500/30 backdrop-blur-2xl px-5 py-2.5 rounded-full flex items-center gap-2.5 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.15)] hover:bg-red-500/20 hover:border-red-500/50 transition-all cursor-pointer group/lock active:scale-95"
+                    title="Click to force unlock"
+                >
+                    <Lock size={14} className="group-hover/lock:hidden" />
+                    <Unlock size={14} className="hidden group-hover/lock:block" />
+                    <span className="text-[10px] font-black tracking-widest uppercase group-hover/lock:hidden">Room Locked</span>
+                    <span className="text-[10px] font-black tracking-widest uppercase hidden group-hover/lock:block">Unlock Room</span>
+                </button>
             )}
 
             {sessionData?.connectedUsers?.length > 0 && (
                 <div className="group relative flex flex-col items-end">
-                    {/* The Expanding Container */}
                     <div className="bg-[#111]/80 border border-white/10 backdrop-blur-2xl rounded-full group-hover:rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col max-h-14 group-hover:max-h-[400px] w-14 group-hover:w-56 cursor-default">
 
-                        {/* Header Area (Fixed width prevents text jumping during animation) */}
                         <div className="flex items-center gap-4 p-4 border-b border-transparent group-hover:border-white/5 transition-colors w-56">
                             <Users size={24} className="text-indigo-400 shrink-0" />
                             <span className="text-[10px] font-black text-neutral-500 tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -116,7 +144,6 @@ const DisplayScreen = ({ sessionId }) => {
                             </span>
                         </div>
 
-                        {/* List Area */}
                         <div className="flex flex-col gap-4 px-6 pb-6 pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 w-56">
                             {sessionData.connectedUsers.map((user, idx) => (
                                 <div key={idx} className="flex items-center gap-3">
@@ -127,7 +154,6 @@ const DisplayScreen = ({ sessionId }) => {
                         </div>
                     </div>
 
-                    {/* Little notification dot that shows when collapsed, hides on hover */}
                     <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-indigo-500 rounded-full border-2 border-[#050505] group-hover:scale-0 transition-transform duration-300 pointer-events-none"></div>
                 </div>
             )}
@@ -148,7 +174,6 @@ const DisplayScreen = ({ sessionId }) => {
                     <h1 className="text-7xl font-black mb-12 tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">SlideBridge.</h1>
 
                     <div className={`bg-[#0a0a0a]/80 backdrop-blur-3xl p-8 rounded-[3rem] shadow-[0_40px_80px_rgba(0,0,0,0.8)] border transition-all duration-700 relative overflow-hidden ${sessionData?.isLocked ? 'border-red-500/30 opacity-50 shadow-[0_0_50px_rgba(239,68,68,0.2)]' : 'border-white/10'}`}>
-                        {/* Shimmer effect across the QR container */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
                         <div className="bg-white p-4 rounded-[2rem] relative z-10">
                             <QRCodeSVG value={controllerUrl} size={300} level="H" className="rounded-xl" />
@@ -183,12 +208,25 @@ const DisplayScreen = ({ sessionId }) => {
             <Roster />
 
             <div key={sessionData.activeFile.url} className="w-full h-full flex items-center justify-center z-10 animate-in fade-in zoom-in-95 duration-700">
+
+                {/* NEW: Image Zoom Wrapper */}
                 {sessionData.activeFile.type.includes('image') && (
-                    <img src={sessionData.activeFile.url} className="max-w-full max-h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-10" />
+                    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                        <img
+                            src={sessionData.activeFile.url}
+                            className="max-w-full max-h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-10 transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                            style={{ transform: `scale(${sessionData.zoomLevel || 1})` }}
+                        />
+                    </div>
                 )}
 
+                {/* NEW: Video Player with Ref and hidden default controls */}
                 {sessionData.activeFile.type.includes('video') && (
-                    <video src={sessionData.activeFile.url} autoPlay controls className="w-full h-full object-contain p-10 shadow-[0_20px_50px_rgba(0,0,0,0.8)]" />
+                    <video
+                        ref={videoRef}
+                        src={sessionData.activeFile.url}
+                        className="w-full h-full object-contain p-10 shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
+                    />
                 )}
 
                 {sessionData.activeFile.type.includes('pdf') && (

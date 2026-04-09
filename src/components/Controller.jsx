@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { doc, updateDoc, onSnapshot, arrayRemove, arrayUnion } from "firebase/firestore";
-import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff, Lock, Unlock, Users, User, AlertTriangle } from 'lucide-react';
+import { doc, updateDoc, onSnapshot, arrayRemove, arrayUnion, deleteDoc } from "firebase/firestore";
+import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff, Lock, Unlock, Users, User, AlertTriangle, Power, Play, Pause, ZoomIn, ZoomOut } from 'lucide-react';
 
 const Controller = ({ sessionId }) => {
     const [session, setSession] = useState(null);
@@ -13,6 +13,7 @@ const Controller = ({ sessionId }) => {
     const [isNameConfirmed, setIsNameConfirmed] = useState(!!urlName);
     const [isLockedOut, setIsLockedOut] = useState(false);
     const [fileToDelete, setFileToDelete] = useState(null);
+    const [isEndingSession, setIsEndingSession] = useState(false);
 
     const hasJoined = useRef(false);
     const CLOUD_NAME = "dhkeim8bf";
@@ -34,6 +35,8 @@ const Controller = ({ sessionId }) => {
                     hasJoined.current = true;
                     updateDoc(sessionRef, { connectedUsers: arrayUnion(userName) });
                 }
+            } else {
+                window.location.href = '/';
             }
         });
 
@@ -119,13 +122,44 @@ const Controller = ({ sessionId }) => {
         } catch (err) { console.error(err); }
     };
 
-    const presentFile = async (file) => { await updateDoc(doc(db, "sessions", sessionId), { activeFile: file, activePage: 1, totalPages: null }); };
+    const confirmEndSession = async () => {
+        try {
+            await deleteDoc(doc(db, "sessions", sessionId));
+        } catch (err) {
+            console.error("Failed to end session:", err);
+        }
+    };
+
+    // NEW: We now initialize isPlaying and zoomLevel when a new file starts
+    const presentFile = async (file) => {
+        await updateDoc(doc(db, "sessions", sessionId), {
+            activeFile: file,
+            activePage: 1,
+            totalPages: null,
+            isPlaying: true,
+            zoomLevel: 1
+        });
+    };
 
     const changePage = async (dir) => {
         const currentPage = session?.activePage || 1;
         let newPage = Math.max(1, currentPage + dir);
         if (session?.totalPages) newPage = Math.min(newPage, session.totalPages);
         if (newPage !== currentPage) { await updateDoc(doc(db, "sessions", sessionId), { activePage: newPage }); }
+    };
+
+    // NEW: Video Control Function
+    const togglePlayPause = async () => {
+        await updateDoc(doc(db, "sessions", sessionId), { isPlaying: !session?.isPlaying });
+    };
+
+    // NEW: Image Zoom Control Function
+    const changeZoom = async (amount) => {
+        const currentZoom = session?.zoomLevel || 1;
+        let newZoom = currentZoom + amount;
+        if (newZoom < 0.5) newZoom = 0.5; // Prevent zooming out too far
+        if (newZoom > 5) newZoom = 5; // Prevent zooming in too far
+        await updateDoc(doc(db, "sessions", sessionId), { zoomLevel: newZoom });
     };
 
     const getPreviewUrl = (file, page) => {
@@ -155,7 +189,28 @@ const Controller = ({ sessionId }) => {
     return (
         <div className="min-h-screen bg-[#050505] text-white flex flex-col font-sans overflow-x-hidden pb-40">
 
-            {/* DELETE MODAL */}
+            {isEndingSession && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl animate-in fade-in duration-200">
+                    <div className="w-full max-w-sm bg-[#111] border border-white/10 p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                            <Power size={28} className="text-red-500" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white mb-2 tracking-tight">End Presentation?</h3>
+                        <p className="text-sm text-neutral-400 text-center mb-8 px-2 leading-relaxed">
+                            This will destroy the room and disconnect all remotes and displays immediately.
+                        </p>
+                        <div className="flex gap-3 w-full">
+                            <button onClick={() => setIsEndingSession(false)} className="flex-1 bg-[#1a1a1a] active:scale-95 text-white font-bold py-4 rounded-2xl transition-all border border-white/5 text-sm">
+                                Cancel
+                            </button>
+                            <button onClick={confirmEndSession} className="flex-1 bg-red-600 active:scale-95 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-red-600/20 text-sm">
+                                End Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {fileToDelete && (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl animate-in fade-in duration-200">
                     <div className="w-full max-w-sm bg-[#111] border border-white/10 p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-200">
@@ -178,7 +233,6 @@ const Controller = ({ sessionId }) => {
                 </div>
             )}
 
-            {/* NAME POPUP */}
             {!isNameConfirmed && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl">
                     <div className="w-full max-w-sm bg-[#111] border border-white/10 p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
@@ -197,9 +251,8 @@ const Controller = ({ sessionId }) => {
                 </div>
             )}
 
-            <div className={`flex flex-col flex-1 transition-all duration-700 ${(!isNameConfirmed || fileToDelete) ? 'opacity-20 blur-xl pointer-events-none' : 'opacity-100'}`}>
+            <div className={`flex flex-col flex-1 transition-all duration-700 ${(!isNameConfirmed || fileToDelete || isEndingSession) ? 'opacity-20 blur-xl pointer-events-none' : 'opacity-100'}`}>
 
-                {/* UPLOAD PROGRESS PILL */}
                 {uploading && (
                     <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 px-5 py-3 rounded-full flex items-center gap-3 shadow-2xl animate-in slide-in-from-top-4">
                         <Loader2 size={16} className="animate-spin text-indigo-400" />
@@ -207,7 +260,6 @@ const Controller = ({ sessionId }) => {
                     </div>
                 )}
 
-                {/* SLEEK HEADER */}
                 <header className="px-6 pt-8 pb-6 flex justify-between items-center sticky top-0 bg-[#050505]/80 backdrop-blur-xl z-40 border-b border-white/5">
                     <div className="flex flex-col">
                         <h1 className="text-3xl font-black tracking-tighter text-white">SB.</h1>
@@ -217,6 +269,9 @@ const Controller = ({ sessionId }) => {
                         </span>
                     </div>
                     <div className="flex gap-3">
+                        <button onClick={() => setIsEndingSession(true)} className="bg-[#111] border border-white/5 w-12 h-12 rounded-2xl flex items-center justify-center active:scale-90 active:bg-red-500/20 active:text-red-500 transition-all text-neutral-400 hover:text-red-500">
+                            <Power size={18} />
+                        </button>
                         <button onClick={toggleLock} className={`w-12 h-12 rounded-2xl flex items-center justify-center active:scale-90 transition-all border ${session?.isLocked ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-[#111] border-white/5 text-neutral-400 hover:text-white'}`}>
                             {session?.isLocked ? <Lock size={18} /> : <Unlock size={18} />}
                         </button>
@@ -230,7 +285,6 @@ const Controller = ({ sessionId }) => {
                     </div>
                 </header>
 
-                {/* CONFIDENCE MONITOR */}
                 {session?.activeFile && (
                     <div className="px-6 mb-8 animate-in fade-in slide-in-from-top-4 duration-500 mt-4">
                         <div className="relative w-full aspect-[4/3] bg-[#0a0a0a] rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] flex items-center justify-center group">
@@ -255,7 +309,6 @@ const Controller = ({ sessionId }) => {
                     </div>
                 )}
 
-                {/* LIBRARY GRID */}
                 <div className="px-6 flex-1">
                     <h3 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 ml-1">Deck Library</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -275,23 +328,58 @@ const Controller = ({ sessionId }) => {
                     </div>
                 </div>
 
-                {/* FLOATING ACTION REMOTE */}
+                {/* THE SHAPE-SHIFTING REMOTE */}
                 {session?.activeFile && (
                     <div className="fixed bottom-8 left-0 right-0 px-6 flex justify-center z-50 pointer-events-none">
                         <div className="w-full max-w-[340px] bg-[#111]/90 backdrop-blur-3xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] pointer-events-auto">
-                            <button onClick={() => changePage(-1)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex items-center justify-center active:scale-90 transition-all">
-                                <ChevronLeft size={28} className="text-white" />
-                            </button>
-                            <div className="flex flex-col items-center justify-center w-24">
-                                <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1">Slide</span>
-                                <span className="text-2xl font-black text-white tracking-tighter tabular-nums">
-                                    {session.activePage || 1}
-                                    {session.totalPages && <span className="text-neutral-600 text-lg ml-0.5 font-semibold">/{session.totalPages}</span>}
-                                </span>
-                            </div>
-                            <button onClick={() => changePage(1)} className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-indigo-600/30">
-                                <ChevronRight size={28} className="text-white" />
-                            </button>
+
+                            {/* PDF CONTROLS */}
+                            {session.activeFile.type.includes('pdf') && (
+                                <>
+                                    <button onClick={() => changePage(-1)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex items-center justify-center active:scale-90 transition-all">
+                                        <ChevronLeft size={28} className="text-white" />
+                                    </button>
+                                    <div className="flex flex-col items-center justify-center w-24">
+                                        <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1">Slide</span>
+                                        <span className="text-2xl font-black text-white tracking-tighter tabular-nums">
+                                            {session.activePage || 1}
+                                            {session.totalPages && <span className="text-neutral-600 text-lg ml-0.5 font-semibold">/{session.totalPages}</span>}
+                                        </span>
+                                    </div>
+                                    <button onClick={() => changePage(1)} className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-indigo-600/30">
+                                        <ChevronRight size={28} className="text-white" />
+                                    </button>
+                                </>
+                            )}
+
+                            {/* VIDEO CONTROLS */}
+                            {session.activeFile.type.includes('video') && (
+                                <div className="flex-1 flex justify-center w-full px-2">
+                                    <button onClick={togglePlayPause} className={`w-full h-16 rounded-full flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg ${session.isPlaying ? 'bg-[#1a1a1a] hover:bg-[#222] text-white border border-white/5' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'}`}>
+                                        {session.isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
+                                        <span className="font-bold tracking-widest uppercase text-xs">{session.isPlaying ? 'Pause Video' : 'Play Video'}</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* IMAGE CONTROLS */}
+                            {session.activeFile.type.includes('image') && (
+                                <>
+                                    <button onClick={() => changeZoom(-0.5)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex items-center justify-center active:scale-90 transition-all">
+                                        <ZoomOut size={24} className="text-white" />
+                                    </button>
+                                    <div className="flex flex-col items-center justify-center w-24">
+                                        <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1">Zoom</span>
+                                        <span className="text-2xl font-black text-white tracking-tighter tabular-nums">
+                                            {Math.round((session.zoomLevel || 1) * 100)}<span className="text-neutral-600 text-lg ml-0.5 font-semibold">%</span>
+                                        </span>
+                                    </div>
+                                    <button onClick={() => changeZoom(0.5)} className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-indigo-600/30">
+                                        <ZoomIn size={24} className="text-white" />
+                                    </button>
+                                </>
+                            )}
+
                         </div>
                     </div>
                 )}
