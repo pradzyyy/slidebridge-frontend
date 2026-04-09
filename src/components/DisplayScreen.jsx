@@ -17,7 +17,8 @@ const DisplayScreen = ({ sessionId }) => {
     const [numPages, setNumPages] = useState(null);
 
     const controllerUrl = `${window.location.origin}?sid=${sessionId}&mode=mobile`;
-    const videoRef = useRef(null); // NEW: Reference to control the video player
+    const videoRef = useRef(null);
+    const lastCommandIdRef = useRef(null); // NEW: Tracks the last seek command so it doesn't double-fire
 
     useEffect(() => {
         const sessionRef = doc(db, "sessions", sessionId);
@@ -33,7 +34,6 @@ const DisplayScreen = ({ sessionId }) => {
         return () => unsubscribe();
     }, [sessionId]);
 
-    // PDF Scroll Logic
     useEffect(() => {
         if (sessionData?.activeFile?.type.includes('pdf') && sessionData?.activePage) {
             const pageId = `page-${sessionData.activePage}`;
@@ -44,7 +44,6 @@ const DisplayScreen = ({ sessionId }) => {
         }
     }, [sessionData?.activePage, sessionData?.activeFile?.url]);
 
-    // NEW: Video Play/Pause Listener
     useEffect(() => {
         if (videoRef.current) {
             if (sessionData?.isPlaying) {
@@ -54,6 +53,18 @@ const DisplayScreen = ({ sessionId }) => {
             }
         }
     }, [sessionData?.isPlaying, sessionData?.activeFile]);
+
+    // NEW: Listen for the "Seek" event from the phone
+    useEffect(() => {
+        if (videoRef.current && sessionData?.videoCommand) {
+            const { type, amount, id } = sessionData.videoCommand;
+            // Only seek if we have a NEW command ID that hasn't been processed yet
+            if (type === 'seek' && id !== lastCommandIdRef.current) {
+                videoRef.current.currentTime += amount;
+                lastCommandIdRef.current = id;
+            }
+        }
+    }, [sessionData?.videoCommand]);
 
     const forceUnlockRoom = async () => {
         try {
@@ -209,7 +220,6 @@ const DisplayScreen = ({ sessionId }) => {
 
             <div key={sessionData.activeFile.url} className="w-full h-full flex items-center justify-center z-10 animate-in fade-in zoom-in-95 duration-700">
 
-                {/* NEW: Image Zoom Wrapper */}
                 {sessionData.activeFile.type.includes('image') && (
                     <div className="w-full h-full flex items-center justify-center overflow-hidden">
                         <img
@@ -220,7 +230,6 @@ const DisplayScreen = ({ sessionId }) => {
                     </div>
                 )}
 
-                {/* NEW: Video Player with Ref and hidden default controls */}
                 {sessionData.activeFile.type.includes('video') && (
                     <video
                         ref={videoRef}

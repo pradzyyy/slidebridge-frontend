@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, onSnapshot, arrayRemove, arrayUnion, deleteDoc } from "firebase/firestore";
-import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff, Lock, Unlock, Users, User, AlertTriangle, Power, Play, Pause, ZoomIn, ZoomOut } from 'lucide-react';
+import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff, Lock, Unlock, Users, User, AlertTriangle, Power, Play, Pause, ZoomIn, ZoomOut, Rewind, FastForward } from 'lucide-react';
 
 const Controller = ({ sessionId }) => {
     const [session, setSession] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [status, setStatus] = useState("");
 
-    // THE FIX: Check for the VIP Wristband in sessionStorage before defaulting to empty
     const urlName = new URLSearchParams(window.location.search).get('name');
     const storedName = sessionStorage.getItem(`sb_name_${sessionId}`);
     const initialName = urlName || storedName || "";
@@ -23,7 +22,6 @@ const Controller = ({ sessionId }) => {
     const CLOUD_NAME = "dhkeim8bf";
     const UPLOAD_PRESET = "jpdqcfpp";
 
-    // THE FIX: Save the name to the VIP Wristband whenever it gets confirmed
     useEffect(() => {
         if (isNameConfirmed && userName) {
             sessionStorage.setItem(`sb_name_${sessionId}`, userName);
@@ -38,7 +36,6 @@ const Controller = ({ sessionId }) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
 
-                // THE FIX: Check if they have a VIP pass from a previous session before bouncing them
                 const hasVipPass = sessionStorage.getItem(`sb_joined_${sessionId}`) === 'true';
 
                 if (data.isLocked && !hasVipPass && !hasJoined.current) {
@@ -51,9 +48,8 @@ const Controller = ({ sessionId }) => {
                 if (isNameConfirmed) {
                     if (!hasJoined.current) {
                         hasJoined.current = true;
-                        sessionStorage.setItem(`sb_joined_${sessionId}`, 'true'); // Give them the VIP Pass
+                        sessionStorage.setItem(`sb_joined_${sessionId}`, 'true');
                     }
-                    // Re-add them to the roster silently if they just refreshed
                     updateDoc(sessionRef, { connectedUsers: arrayUnion(userName) }).catch(() => { });
                 }
             } else {
@@ -157,7 +153,8 @@ const Controller = ({ sessionId }) => {
             activePage: 1,
             totalPages: null,
             isPlaying: true,
-            zoomLevel: 1
+            zoomLevel: 1,
+            videoCommand: null // Reset commands
         });
     };
 
@@ -170,6 +167,13 @@ const Controller = ({ sessionId }) => {
 
     const togglePlayPause = async () => {
         await updateDoc(doc(db, "sessions", sessionId), { isPlaying: !session?.isPlaying });
+    };
+
+    // NEW: Fire a seek command to the database
+    const seekVideo = async (amount) => {
+        await updateDoc(doc(db, "sessions", sessionId), {
+            videoCommand: { type: 'seek', amount: amount, id: Date.now() }
+        });
     };
 
     const changeZoom = async (amount) => {
@@ -346,10 +350,12 @@ const Controller = ({ sessionId }) => {
                     </div>
                 </div>
 
+                {/* THE SHAPE-SHIFTING REMOTE */}
                 {session?.activeFile && (
                     <div className="fixed bottom-8 left-0 right-0 px-6 flex justify-center z-50 pointer-events-none">
                         <div className="w-full max-w-[340px] bg-[#111]/90 backdrop-blur-3xl border border-white/10 p-2 rounded-full flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] pointer-events-auto">
 
+                            {/* PDF CONTROLS */}
                             {session.activeFile.type.includes('pdf') && (
                                 <>
                                     <button onClick={() => changePage(-1)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex items-center justify-center active:scale-90 transition-all">
@@ -368,15 +374,26 @@ const Controller = ({ sessionId }) => {
                                 </>
                             )}
 
+                            {/* VIDEO CONTROLS WITH 5s SEEK */}
                             {session.activeFile.type.includes('video') && (
-                                <div className="flex-1 flex justify-center w-full px-2">
-                                    <button onClick={togglePlayPause} className={`w-full h-16 rounded-full flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg ${session.isPlaying ? 'bg-[#1a1a1a] hover:bg-[#222] text-white border border-white/5' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'}`}>
-                                        {session.isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
-                                        <span className="font-bold tracking-widest uppercase text-xs">{session.isPlaying ? 'Pause Video' : 'Play Video'}</span>
+                                <>
+                                    <button onClick={() => seekVideo(-5)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex flex-col items-center justify-center active:scale-90 transition-all group">
+                                        <Rewind size={20} className="text-white mb-0.5 group-active:-translate-x-1 transition-transform" />
+                                        <span className="text-[9px] font-bold text-neutral-400">-5s</span>
                                     </button>
-                                </div>
+                                    <div className="flex-1 flex justify-center px-3">
+                                        <button onClick={togglePlayPause} className={`w-full h-16 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg ${session.isPlaying ? 'bg-[#1a1a1a] hover:bg-[#222] text-white border border-white/5' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'}`}>
+                                            {session.isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
+                                        </button>
+                                    </div>
+                                    <button onClick={() => seekVideo(5)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex flex-col items-center justify-center active:scale-90 transition-all group">
+                                        <FastForward size={20} className="text-white mb-0.5 group-active:translate-x-1 transition-transform" />
+                                        <span className="text-[9px] font-bold text-neutral-400">+5s</span>
+                                    </button>
+                                </>
                             )}
 
+                            {/* IMAGE CONTROLS */}
                             {session.activeFile.type.includes('image') && (
                                 <>
                                     <button onClick={() => changeZoom(-0.5)} className="w-16 h-16 bg-[#1a1a1a] hover:bg-[#222] rounded-full flex items-center justify-center active:scale-90 transition-all">
