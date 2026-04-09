@@ -1,23 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, onSnapshot, arrayRemove, arrayUnion } from "firebase/firestore";
-import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff } from 'lucide-react';
+import { Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2, MonitorOff, Lock, Unlock, Users } from 'lucide-react';
 
 const Controller = ({ sessionId }) => {
     const [session, setSession] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [status, setStatus] = useState("");
+    const hasJoined = useRef(false);
+
+    // Get the user's name from the URL
+    const userName = new URLSearchParams(window.location.search).get('name') || 'Anonymous';
 
     const CLOUD_NAME = "dhkeim8bf";
     const UPLOAD_PRESET = "jpdqcfpp";
 
     useEffect(() => {
         if (!sessionId) return;
-        const unsub = onSnapshot(doc(db, "sessions", sessionId), (docSnap) => {
-            if (docSnap.exists()) setSession(docSnap.data());
+        const sessionRef = doc(db, "sessions", sessionId);
+
+        const unsub = onSnapshot(sessionRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+
+                // THE BOUNCER: If room is locked and we haven't joined yet, kick us out
+                if (data.isLocked && !hasJoined.current) {
+                    alert("This room has been locked by the host.");
+                    window.location.href = '/';
+                    return;
+                }
+
+                setSession(data);
+
+                // REGISTER PRESENCE: Add our name to the database
+                if (!hasJoined.current) {
+                    hasJoined.current = true;
+                    updateDoc(sessionRef, { connectedUsers: arrayUnion(userName) });
+                }
+            }
         });
-        return () => unsub();
+
+        // CLEANUP: Remove our name when we close the app
+        return () => {
+            if (hasJoined.current) {
+                updateDoc(sessionRef, { connectedUsers: arrayRemove(userName) }).catch(() => console.log("Cleanup skipped"));
+            }
+            unsub();
+        };
     }, [sessionId]);
+
+    const toggleLock = async () => {
+        await updateDoc(doc(db, "sessions", sessionId), {
+            isLocked: !session?.isLocked
+        });
+    };
 
     const handleUpload = async (e) => {
         const file = e.target.files[0];
@@ -27,7 +63,6 @@ const Controller = ({ sessionId }) => {
         try {
             let fileToUploadToCloudinary = file;
             let finalFileName = file.name;
-
             const isOffice = file.name.match(/\.(docx|pptx|xlsx|ppt|doc)$/i);
 
             if (isOffice) {
@@ -40,7 +75,7 @@ const Controller = ({ sessionId }) => {
                     body: convertFormData
                 });
 
-                if (!convertRes.ok) throw new Error("Local conversion failed");
+                if (!convertRes.ok) throw new Error("Cloud conversion failed");
 
                 const pdfBlob = await convertRes.blob();
                 finalFileName = file.name.replace(/\.[^/.]+$/, ".pdf");
@@ -59,7 +94,6 @@ const Controller = ({ sessionId }) => {
             const cloudData = await cloudRes.json();
 
             const isPdf = finalFileName.endsWith('.pdf');
-
             const fileData = {
                 name: finalFileName,
                 url: cloudData.secure_url,
@@ -67,14 +101,10 @@ const Controller = ({ sessionId }) => {
                 id: Date.now()
             };
 
-            await updateDoc(doc(db, "sessions", sessionId), {
-                files: arrayUnion(fileData)
-            });
-
+            await updateDoc(doc(db, "sessions", sessionId), { files: arrayUnion(fileData) });
             setUploading(false);
             setStatus("");
         } catch (error) {
-            console.error("Upload error:", error);
             setUploading(false);
             setStatus("Error");
             setTimeout(() => setStatus(""), 2000);
@@ -89,48 +119,34 @@ const Controller = ({ sessionId }) => {
         e.stopPropagation();
         if (!window.confirm(`Delete ${file.name}?`)) return;
         try {
-            await updateDoc(doc(db, "sessions", sessionId), {
-                files: arrayRemove(file)
-            });
+            await updateDoc(doc(db, "sessions", sessionId), { files: arrayRemove(file) });
         } catch (err) { console.error(err); }
     };
 
     const presentFile = async (file) => {
-        await updateDoc(doc(db, "sessions", sessionId), {
-            activeFile: file,
-            activePage: 1,
-            totalPages: null
-        });
+        await updateDoc(doc(db, "sessions", sessionId), { activeFile: file, activePage: 1, totalPages: null });
     };
 
     const changePage = async (dir) => {
         const currentPage = session?.activePage || 1;
         let newPage = Math.max(1, currentPage + dir);
-
-        if (session?.totalPages) {
-            newPage = Math.min(newPage, session.totalPages);
-        }
+        if (session?.totalPages) newPage = Math.min(newPage, session.totalPages);
 
         if (newPage !== currentPage) {
-            await updateDoc(doc(db, "sessions", sessionId), {
-                activePage: newPage
-            });
+            await updateDoc(doc(db, "sessions", sessionId), { activePage: newPage });
         }
     };
 
     const getPreviewUrl = (file, page) => {
         if (!file) return "";
         if (file.type.includes('image')) return file.url;
-
-        return file.url
-            .replace('/upload/', `/upload/w_600,pg_${page || 1}/`)
-            .replace('.pdf', '.jpg');
+        return file.url.replace('/upload/', `/upload/w_600,pg_${page || 1}/`).replace('.pdf', '.jpg');
     };
 
     return (
         <div className="min-h-screen bg-neutral-950 text-white p-6 flex flex-col font-sans overflow-x-hidden selection:bg-indigo-500/30">
             {uploading && (
-                <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-indigo-500/90 backdrop-blur-xl border border-indigo-400/30 px-6 py-3 rounded-full flex items-center gap-3 shadow-2xl shadow-indigo-500/20 transition-all">
+                <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-indigo-500/90 backdrop-blur-xl border border-indigo-400/30 px-6 py-3 rounded-full flex items-center gap-3 shadow-2xl shadow-indigo-500/20">
                     <Loader2 size={16} className="animate-spin text-white" />
                     <span className="text-[11px] font-bold text-white uppercase tracking-[0.2em]">{status}</span>
                 </div>
@@ -139,9 +155,14 @@ const Controller = ({ sessionId }) => {
             <header className="flex justify-between items-center py-4 mb-4">
                 <div className="flex flex-col">
                     <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-white to-neutral-500 bg-clip-text text-transparent">SB.</h1>
-                    <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">Remote Control</span>
+                    <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1">
+                        <Users size={10} /> {session?.connectedUsers?.length || 1} Connected
+                    </span>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
+                    <button onClick={toggleLock} className={`w-12 h-12 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-lg border ${session?.isLocked ? 'bg-red-500/20 border-red-500/50 text-red-500' : 'bg-neutral-900 border-white/5 text-neutral-400'}`}>
+                        {session?.isLocked ? <Lock size={18} /> : <Unlock size={18} />}
+                    </button>
                     <button onClick={stopDisplay} className="bg-neutral-900 border border-white/5 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 active:bg-red-500/20 transition-all shadow-lg">
                         <MonitorOff size={18} className="text-neutral-400" />
                     </button>
@@ -180,23 +201,13 @@ const Controller = ({ sessionId }) => {
                 <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-4 ml-2">Media Library</h3>
                 <div className="grid grid-cols-2 gap-4">
                     {session?.files?.map((file) => (
-                        <div
-                            key={file.id}
-                            onClick={() => presentFile(file)}
-                            className={`relative aspect-square rounded-[2rem] overflow-hidden border transition-all duration-300 active:scale-95 cursor-pointer ${session?.activeFile?.id === file.id
-                                ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/20'
-                                : 'border-white/5 bg-neutral-900 shadow-xl hover:border-white/10'
-                                }`}
-                        >
+                        <div key={file.id} onClick={() => presentFile(file)} className={`relative aspect-square rounded-[2rem] overflow-hidden border transition-all duration-300 active:scale-95 cursor-pointer ${session?.activeFile?.id === file.id ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/20' : 'border-white/5 bg-neutral-900 shadow-xl hover:border-white/10'}`}>
                             <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                                {file.type.includes('image') ? <img src={file.url} className="w-full h-full object-cover" /> :
-                                    file.type.includes('pdf') ? <FileText size={32} className="text-neutral-400" /> : <PlayCircle size={32} className="text-neutral-400" />}
+                                {file.type.includes('image') ? <img src={file.url} className="w-full h-full object-cover" /> : file.type.includes('pdf') ? <FileText size={32} className="text-neutral-400" /> : <PlayCircle size={32} className="text-neutral-400" />}
                             </div>
-
                             <button onClick={(e) => deleteFile(e, file)} className="absolute top-3 right-3 p-2.5 bg-black/40 hover:bg-red-500/80 rounded-full backdrop-blur-md transition-colors z-10">
                                 <Trash2 size={14} className="text-white" />
                             </button>
-
                             <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black via-black/80 to-transparent">
                                 <p className="text-[11px] font-medium text-white truncate tracking-wide">{file.name}</p>
                             </div>
@@ -211,7 +222,6 @@ const Controller = ({ sessionId }) => {
                         <button onClick={() => changePage(-1)} className="w-16 h-16 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center active:scale-90 transition-all">
                             <ChevronLeft size={28} className="text-white" />
                         </button>
-
                         <div className="flex flex-col items-center justify-center w-24">
                             <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1">Slide</span>
                             <span className="text-2xl font-black text-white tracking-tighter">
@@ -219,7 +229,6 @@ const Controller = ({ sessionId }) => {
                                 {session.totalPages && <span className="text-neutral-600 text-lg ml-1 font-semibold">/ {session.totalPages}</span>}
                             </span>
                         </div>
-
                         <button onClick={() => changePage(1)} className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-indigo-600/30">
                             <ChevronRight size={28} className="text-white" />
                         </button>
