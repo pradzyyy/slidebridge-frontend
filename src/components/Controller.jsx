@@ -12,8 +12,8 @@ const Controller = ({ sessionId }) => {
     const urlName = new URLSearchParams(window.location.search).get('name');
     const [userName, setUserName] = useState(urlName || "");
     const [isNameConfirmed, setIsNameConfirmed] = useState(!!urlName);
-    const [isLockedOut, setIsLockedOut] = useState(false); // Replaces the ugly alert()
-    const [fileToDelete, setFileToDelete] = useState(null); // Replaces the ugly confirm()
+    const [isLockedOut, setIsLockedOut] = useState(false);
+    const [fileToDelete, setFileToDelete] = useState(null);
 
     const hasJoined = useRef(false);
 
@@ -108,17 +108,25 @@ const Controller = ({ sessionId }) => {
 
     const stopDisplay = async () => { await updateDoc(doc(db, "sessions", sessionId), { activeFile: null }); };
 
-    // --- NEW: Custom Delete Logic ---
+    // --- Custom Delete Logic ---
     const promptDelete = (e, file) => {
         e.stopPropagation();
-        setFileToDelete(file); // Opens the modal instead of browser confirm
+        setFileToDelete(file);
     };
 
     const confirmDelete = async () => {
         if (!fileToDelete) return;
         try {
-            await updateDoc(doc(db, "sessions", sessionId), { files: arrayRemove(fileToDelete) });
-            setFileToDelete(null); // Close modal on success
+            // THE FIX: Prepare the database updates
+            const updates = { files: arrayRemove(fileToDelete) };
+
+            // If the file we are deleting is the one currently on the big screen, clear the screen too!
+            if (session?.activeFile?.id === fileToDelete.id) {
+                updates.activeFile = null;
+            }
+
+            await updateDoc(doc(db, "sessions", sessionId), updates);
+            setFileToDelete(null);
         } catch (err) { console.error(err); }
     };
 
@@ -290,7 +298,6 @@ const Controller = ({ sessionId }) => {
                                     {file.type.includes('image') ? <img src={file.url} className="w-full h-full object-cover" /> : file.type.includes('pdf') ? <FileText size={32} className="text-neutral-400" /> : <PlayCircle size={32} className="text-neutral-400" />}
                                 </div>
 
-                                {/* UPDATED TRASH BUTTON - NOW CALLS promptDelete */}
                                 <button onClick={(e) => promptDelete(e, file)} className="absolute top-3 right-3 p-2.5 bg-black/40 hover:bg-red-500/80 rounded-full backdrop-blur-md transition-colors z-10">
                                     <Trash2 size={14} className="text-white" />
                                 </button>
