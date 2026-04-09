@@ -35,7 +35,7 @@ const Controller = ({ sessionId }) => {
                 const convertFormData = new FormData();
                 convertFormData.append('file', file);
 
-                const convertRes = await fetch(`http://${window.location.hostname}:5000/convert`, {
+                const convertRes = await fetch(`https://slidebridge-backend.onrender.com/convert`, {
                     method: 'POST',
                     body: convertFormData
                 });
@@ -184,8 +184,8 @@ const Controller = ({ sessionId }) => {
                             key={file.id}
                             onClick={() => presentFile(file)}
                             className={`relative aspect-square rounded-[2rem] overflow-hidden border transition-all duration-300 active:scale-95 cursor-pointer ${session?.activeFile?.id === file.id
-                                    ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/20'
-                                    : 'border-white/5 bg-neutral-900 shadow-xl hover:border-white/10'
+                                ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/20'
+                                : 'border-white/5 bg-neutral-900 shadow-xl hover:border-white/10'
                                 }`}
                         >
                             <div className="absolute inset-0 flex items-center justify-center opacity-30">
