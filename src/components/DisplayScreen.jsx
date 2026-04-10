@@ -12,250 +12,295 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     import.meta.url,
 ).toString();
 
+// ── Particle canvas ───────────────────────────────────────────────────────────
+const ParticleField = () => {
+    const ref = useRef(null);
+    useEffect(() => {
+        const canvas = ref.current; if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let id;
+        let W = canvas.width = window.innerWidth;
+        let H = canvas.height = window.innerHeight;
+        const resize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
+        window.addEventListener('resize', resize);
+        const pts = Array.from({ length: 60 }, () => ({
+            x: Math.random() * W, y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.22, vy: (Math.random() - 0.5) * 0.22,
+            r: Math.random() * 1.2 + 0.3, a: Math.random() * 0.3 + 0.08,
+        }));
+        const tick = () => {
+            ctx.clearRect(0, 0, W, H);
+            for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+                const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+                const d = Math.sqrt(dx * dx + dy * dy);
+                if (d < 140) { ctx.beginPath(); ctx.strokeStyle = `rgba(160,160,220,${0.055 * (1 - d / 140)})`; ctx.lineWidth = 0.5; ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke(); }
+            }
+            pts.forEach(p => {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(190,190,255,${p.a})`; ctx.fill();
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+                if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+            });
+            id = requestAnimationFrame(tick);
+        };
+        tick();
+        return () => { cancelAnimationFrame(id); window.removeEventListener('resize', resize); };
+    }, []);
+    return <canvas ref={ref} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.65 }} />;
+};
+
+// ── Breathing rings behind QR ─────────────────────────────────────────────────
+const BreathingRings = () => (
+    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', zIndex: 0 }}>
+        {[1, 2, 3, 4].map(i => (
+            <div key={i} style={{
+                position: 'absolute', borderRadius: '50%',
+                width: `${340 + i * 80}px`, height: `${340 + i * 80}px`,
+                top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                border: '1px solid rgba(160,160,255,0.07)',
+                animation: `dsRingPulse 3.2s ease-out ${i * 0.55}s infinite`,
+            }} />
+        ))}
+    </div>
+);
+
 const DisplayScreen = ({ sessionId }) => {
     const [sessionData, setSessionData] = useState(null);
     const [numPages, setNumPages] = useState(null);
+    const [mounted, setMounted] = useState(false);
+    const [fileTransition, setFileTransition] = useState(false);
+    const prevUrlRef = useRef(null);
+    const videoRef = useRef(null);
+    const lastCmdRef = useRef(null);
 
     const controllerUrl = `${window.location.origin}?sid=${sessionId}&mode=mobile`;
-    const videoRef = useRef(null);
-    const lastCommandIdRef = useRef(null); // NEW: Tracks the last seek command so it doesn't double-fire
+
+    useEffect(() => { setTimeout(() => setMounted(true), 80); }, []);
 
     useEffect(() => {
         const sessionRef = doc(db, "sessions", sessionId);
         setDoc(sessionRef, { createdAt: Date.now(), status: 'waiting', isLocked: false, connectedUsers: [] }, { merge: true });
-
-        const unsubscribe = onSnapshot(sessionRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setSessionData(docSnap.data());
-            } else {
-                window.location.href = '/';
-            }
+        const unsub = onSnapshot(sessionRef, snap => {
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.activeFile?.url !== prevUrlRef.current) {
+                    setFileTransition(true);
+                    setTimeout(() => setFileTransition(false), 700);
+                    prevUrlRef.current = data.activeFile?.url || null;
+                }
+                setSessionData(data);
+            } else { window.location.href = '/'; }
         });
-        return () => unsubscribe();
+        return () => unsub();
     }, [sessionId]);
 
     useEffect(() => {
         if (sessionData?.activeFile?.type.includes('pdf') && sessionData?.activePage) {
-            const pageId = `page-${sessionData.activePage}`;
-            const element = document.getElementById(pageId);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            document.getElementById(`page-${sessionData.activePage}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, [sessionData?.activePage, sessionData?.activeFile?.url]);
 
     useEffect(() => {
-        if (videoRef.current) {
-            if (sessionData?.isPlaying) {
-                videoRef.current.play().catch(e => console.log("Auto-play prevented by browser", e));
-            } else {
-                videoRef.current.pause();
-            }
-        }
+        if (!videoRef.current) return;
+        if (sessionData?.isPlaying) videoRef.current.play().catch(() => { });
+        else videoRef.current.pause();
     }, [sessionData?.isPlaying, sessionData?.activeFile]);
 
-    // NEW: Listen for the "Seek" event from the phone
     useEffect(() => {
         if (videoRef.current && sessionData?.videoCommand) {
             const { type, amount, id } = sessionData.videoCommand;
-            // Only seek if we have a NEW command ID that hasn't been processed yet
-            if (type === 'seek' && id !== lastCommandIdRef.current) {
+            if (type === 'seek' && id !== lastCmdRef.current) {
                 videoRef.current.currentTime += amount;
-                lastCommandIdRef.current = id;
+                lastCmdRef.current = id;
             }
         }
     }, [sessionData?.videoCommand]);
 
     const forceUnlockRoom = async () => {
-        try {
-            await updateDoc(doc(db, "sessions", sessionId), { isLocked: false });
-        } catch (err) {
-            console.error("Failed to unlock room:", err);
-        }
+        try { await updateDoc(doc(db, "sessions", sessionId), { isLocked: false }); } catch (e) { }
     };
 
-    const AnimatedBackground = () => (
+    const css = `
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Poppins:ital,wght@0,400;0,700;0,800;1,700;1,800&display=swap');
+        *{box-sizing:border-box;}
+        @keyframes dsScan { 0%{top:-2px;opacity:0} 3%{opacity:1} 97%{opacity:1} 100%{top:100%;opacity:0} }
+        @keyframes dsOrb1 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(55px,-45px) scale(1.06)} }
+        @keyframes dsOrb2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-40px,35px) scale(1.04)} }
+        @keyframes dsFadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes dsLetterDrop { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes dsTagline { from{opacity:0;letter-spacing:.4em} to{opacity:1;letter-spacing:.2em} }
+        @keyframes dsPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+        @keyframes dsSpin { to{transform:rotate(360deg)} }
+        @keyframes dsRingPulse { 0%{transform:translate(-50%,-50%) scale(.85);opacity:.5} 70%{opacity:.06} 100%{transform:translate(-50%,-50%) scale(1.3);opacity:0} }
+        @keyframes dsCornerGlow { 0%,100%{border-color:rgba(255,255,255,.14)} 50%{border-color:rgba(180,180,255,.5)} }
+        @keyframes dsQrFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        @keyframes dsFlash { 0%{opacity:0} 15%{opacity:1} 100%{opacity:0} }
+        @keyframes dsCounterPop { from{opacity:0;transform:translateY(5px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes dsDotBlink { 0%,100%{opacity:.2} 50%{opacity:.7} }
+        .sb-display{font-family:'DM Sans',sans-serif;}
+        .no-scrollbar::-webkit-scrollbar{display:none;}
+        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
+    `;
+
+    const Background = () => (
         <>
-            <style>{`
-                .cyber-bg {
-                    position: fixed;
-                    inset: 0;
-                    background-color: #030303;
-                    z-index: 0;
-                    overflow: hidden;
-                    pointer-events: none;
-                }
-                .glow-orb-1 {
-                    position: absolute;
-                    top: 10%; left: 15%;
-                    width: 50vw; height: 50vw;
-                    background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 60%);
-                    border-radius: 50%;
-                    animation: floatOrb 12s ease-in-out infinite alternate;
-                }
-                .glow-orb-2 {
-                    position: absolute;
-                    bottom: 0%; right: 10%;
-                    width: 60vw; height: 60vw;
-                    background: radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 60%);
-                    border-radius: 50%;
-                    animation: floatOrb 15s ease-in-out infinite alternate-reverse;
-                }
-                .moving-grid {
-                    position: absolute;
-                    width: 200vw; height: 200vh;
-                    top: 20%; left: -50%;
-                    background-image: 
-                        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-                    background-size: 50px 50px;
-                    transform: perspective(600px) rotateX(75deg);
-                    animation: gridMove 10s linear infinite;
-                }
-                @keyframes gridMove {
-                    0% { background-position: 0 0; }
-                    100% { background-position: 0 50px; }
-                }
-                @keyframes floatOrb {
-                    0% { transform: translate(0, 0) scale(1); }
-                    100% { transform: translate(80px, -80px) scale(1.1); }
-                }
-            `}</style>
-            <div className="cyber-bg">
-                <div className="glow-orb-1"></div>
-                <div className="glow-orb-2"></div>
-                <div className="moving-grid"></div>
+            <style>{css}</style>
+            <div style={{ position: 'fixed', inset: 0, background: '#080808', zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', width: '70vw', height: '70vw', top: '-15%', left: '-10%', borderRadius: '50%', background: 'radial-gradient(circle,rgba(100,100,210,.07) 0%,transparent 65%)', animation: 'dsOrb1 20s ease-in-out infinite alternate' }} />
+                <div style={{ position: 'absolute', width: '60vw', height: '60vw', bottom: '-15%', right: '-5%', borderRadius: '50%', background: 'radial-gradient(circle,rgba(120,60,200,.05) 0%,transparent 65%)', animation: 'dsOrb2 26s ease-in-out infinite alternate-reverse' }} />
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.016) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.016) 1px,transparent 1px)', backgroundSize: '80px 80px' }} />
+            </div>
+            {/* Scan line */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg,transparent,rgba(140,140,255,.11),transparent)', animation: 'dsScan 10s linear infinite' }} />
             </div>
         </>
     );
 
     const Roster = () => (
-        <div className="absolute top-8 right-8 flex flex-col items-end gap-3 z-50">
+        <div style={{ position: 'absolute', top: 32, right: 32, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
             {sessionData?.isLocked && (
-                <button
-                    onClick={forceUnlockRoom}
-                    className="bg-red-500/10 border border-red-500/30 backdrop-blur-2xl px-5 py-2.5 rounded-full flex items-center gap-2.5 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.15)] hover:bg-red-500/20 hover:border-red-500/50 transition-all cursor-pointer group/lock active:scale-95"
-                    title="Click to force unlock"
-                >
-                    <Lock size={14} className="group-hover/lock:hidden" />
-                    <Unlock size={14} className="hidden group-hover/lock:block" />
-                    <span className="text-[10px] font-black tracking-widest uppercase group-hover/lock:hidden">Room Locked</span>
-                    <span className="text-[10px] font-black tracking-widest uppercase hidden group-hover/lock:block">Unlock Room</span>
+                <button onClick={forceUnlockRoom} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(200,50,50,.08)', border: '1px solid rgba(200,50,50,.2)', padding: '10px 20px', borderRadius: 100, color: '#e05555', fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', cursor: 'pointer', backdropFilter: 'blur(20px)', animation: 'dsFadeUp .4s ease both' }}>
+                    <Lock size={13} /> Room locked — click to unlock
                 </button>
             )}
-
             {sessionData?.connectedUsers?.length > 0 && (
-                <div className="group relative flex flex-col items-end">
-                    <div className="bg-[#111]/80 border border-white/10 backdrop-blur-2xl rounded-full group-hover:rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col max-h-14 group-hover:max-h-[400px] w-14 group-hover:w-56 cursor-default">
-
-                        <div className="flex items-center gap-4 p-4 border-b border-transparent group-hover:border-white/5 transition-colors w-56">
-                            <Users size={24} className="text-indigo-400 shrink-0" />
-                            <span className="text-[10px] font-black text-neutral-500 tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                Remotes
-                            </span>
-                        </div>
-
-                        <div className="flex flex-col gap-4 px-6 pb-6 pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 w-56">
-                            {sessionData.connectedUsers.map((user, idx) => (
-                                <div key={idx} className="flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse shrink-0"></div>
-                                    <span className="text-sm font-bold text-white tracking-wide truncate">{user}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-indigo-500 rounded-full border-2 border-[#050505] group-hover:scale-0 transition-transform duration-300 pointer-events-none"></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(14,14,18,.85)', border: '1px solid rgba(255,255,255,.07)', padding: '10px 20px', borderRadius: 100, backdropFilter: 'blur(20px)', animation: 'dsFadeUp .4s .1s ease both' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', animation: 'dsPulse 2s ease-in-out infinite' }} />
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,.4)' }}>Remotes</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{sessionData.connectedUsers.length}</span>
                 </div>
             )}
         </div>
     );
 
+    const letters = 'SlideBridge'.split('');
+
+    // ── Idle / QR ─────────────────────────────────────────────────────────────
     if (!sessionData?.activeFile) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen text-white relative overflow-hidden font-sans">
-                <AnimatedBackground />
+            <div className="sb-display" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#080808', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+                <Background />
+                <ParticleField />
                 <Roster />
 
-                <div className="z-10 flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                    <div className="bg-indigo-500/10 p-5 rounded-full mb-8 border border-indigo-500/20 backdrop-blur-2xl shadow-[0_0_40px_rgba(99,102,241,0.3)]">
-                        <MonitorPlay size={48} className="text-indigo-400" />
-                    </div>
-
-                    <h1 className="text-7xl font-black mb-12 tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">SlideBridge.</h1>
-
-                    <div className={`bg-[#0a0a0a]/80 backdrop-blur-3xl p-8 rounded-[3rem] shadow-[0_40px_80px_rgba(0,0,0,0.8)] border transition-all duration-700 relative overflow-hidden ${sessionData?.isLocked ? 'border-red-500/30 opacity-50 shadow-[0_0_50px_rgba(239,68,68,0.2)]' : 'border-white/10'}`}>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
-                        <div className="bg-white p-4 rounded-[2rem] relative z-10">
-                            <QRCodeSVG value={controllerUrl} size={300} level="H" className="rounded-xl" />
-                        </div>
-                    </div>
-
-                    <p className="mt-10 text-xl text-neutral-400 font-medium tracking-wide">
-                        {sessionData?.isLocked ? 'Room is currently locked' : 'Scan to take control'}
+                <div style={{ zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    {/* Tagline */}
+                    <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,.25)', marginBottom: 44, animation: 'dsTagline 1s cubic-bezier(.16,1,.3,1) .8s both' }}>
+                        Wireless Presentation System
                     </p>
 
-                    <div className="mt-8 group relative cursor-pointer">
-                        <div className={`bg-[#050505]/80 border h-16 rounded-full backdrop-blur-2xl transition-all duration-500 flex items-center justify-center min-w-[280px] px-8 shadow-2xl ${sessionData?.isLocked ? 'border-red-500/20 text-red-500/50' : 'border-indigo-500/30 hover:bg-[#111] hover:border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.1)]'}`}>
-                            <span className="text-sm font-bold tracking-widest uppercase group-hover:hidden flex items-center gap-3 text-indigo-400">
-                                <KeyRound size={18} /> {sessionData?.isLocked ? 'Locked' : 'Hover for Room Code'}
-                            </span>
-                            {!sessionData?.isLocked && (
-                                <div className="hidden group-hover:flex items-center gap-4">
-                                    <span className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Code:</span>
-                                    <span className="text-3xl font-black tracking-[0.2em] text-white">{sessionId}</span>
-                                </div>
-                            )}
+                    {/* Wordmark letter-drop */}
+                    <h1 style={{ fontFamily: "'Poppins', sans-serif", fontSize: 'clamp(52px,8vw,92px)', fontWeight: 800, fontStyle: 'italic', letterSpacing: '-.04em', color: '#fff', marginBottom: 8, display: 'flex', alignItems: 'baseline' }}>
+                        {letters.map((l, i) => (
+                            <span key={i} style={{ display: 'inline-block', animation: `dsLetterDrop .55s cubic-bezier(.16,1,.3,1) ${i * .045}s both` }}>{l}</span>
+                        ))}
+                        <span style={{ display: 'inline-block', color: 'rgba(255,255,255,.2)', animation: `dsLetterDrop .55s cubic-bezier(.16,1,.3,1) ${letters.length * .045}s both` }}>.</span>
+                    </h1>
+
+                    {/* QR block */}
+                    <div style={{ position: 'relative', animation: 'dsQrFloat 6s ease-in-out infinite', zIndex: 1 }}>
+                        <BreathingRings />
+                        <div style={{
+                            position: 'relative', background: 'rgba(12,12,16,.92)',
+                            border: `1px solid ${sessionData?.isLocked ? 'rgba(200,50,50,.25)' : 'rgba(255,255,255,.08)'}`,
+                            borderRadius: 32, padding: 28, backdropFilter: 'blur(40px)',
+                            opacity: sessionData?.isLocked ? 0.4 : 1,
+                            animation: 'dsFadeUp .8s cubic-bezier(.16,1,.3,1) .55s both',
+                            transition: 'all .5s',
+                        }}>
+                            {/* Animated corners */}
+                            {[['tl', '2px 0 0 2px', '8px 0 0 0'], ['tr', '2px 2px 0 0', '0 8px 0 0'], ['bl', '0 0 2px 2px', '0 0 0 8px'], ['br', '0 2px 2px 0', '0 0 8px 0']].map(([k, bw, br], i) => (
+                                <div key={k} style={{
+                                    position: 'absolute', width: 22, height: 22,
+                                    borderStyle: 'solid', borderWidth: bw, borderRadius: br,
+                                    borderColor: 'rgba(255,255,255,.18)',
+                                    ...(k === 'tl' ? { top: -1, left: -1 } : k === 'tr' ? { top: -1, right: -1 } : k === 'bl' ? { bottom: -1, left: -1 } : { bottom: -1, right: -1 }),
+                                    animation: `dsCornerGlow 3s ease-in-out ${i * .75}s infinite`,
+                                }} />
+                            ))}
+                            <div style={{ background: '#fff', borderRadius: 16, padding: 20 }}>
+                                <QRCodeSVG value={controllerUrl} size={260} level="H" />
+                            </div>
                         </div>
+                    </div>
+
+                    {/* Scan label */}
+                    <p style={{ marginTop: 32, fontSize: 15, fontWeight: 400, color: 'rgba(255,255,255,.35)', letterSpacing: '.03em', animation: 'dsFadeUp .7s cubic-bezier(.16,1,.3,1) 1.2s both' }}>
+                        {sessionData?.isLocked ? 'Room is currently locked' : 'Scan with your phone to take control'}
+                    </p>
+
+                    {/* Room code pill */}
+                    <div style={{ marginTop: 20, display: 'inline-flex', alignItems: 'center', gap: 14, background: 'rgba(12,12,16,.8)', border: '1px solid rgba(255,255,255,.06)', padding: '14px 28px', borderRadius: 100, backdropFilter: 'blur(20px)', animation: 'dsFadeUp .7s cubic-bezier(.16,1,.3,1) 1.4s both' }}>
+                        {sessionData?.isLocked ? (
+                            <><Lock size={14} style={{ color: 'rgba(255,255,255,.2)' }} /><span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.22)', letterSpacing: '.2em', textTransform: 'uppercase' }}>Locked</span></>
+                        ) : (
+                            <><KeyRound size={14} style={{ color: 'rgba(255,255,255,.2)' }} />
+                                <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.22)', letterSpacing: '.2em', textTransform: 'uppercase' }}>Room code</span>
+                                <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 22, fontWeight: 500, color: '#fff', letterSpacing: '.15em' }}>
+                                    {sessionId.split('').map((c, i) => (
+                                        <span key={i} style={{ display: 'inline-block', animation: `dsLetterDrop .4s cubic-bezier(.16,1,.3,1) ${1.5 + i * .07}s both` }}>{c}</span>
+                                    ))}
+                                </span></>
+                        )}
+                    </div>
+
+                    {/* Blinking dots */}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 44, animation: 'dsFadeUp .7s cubic-bezier(.16,1,.3,1) 1.6s both' }}>
+                        {[0, 1, 2].map(i => (
+                            <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,.15)', animation: `dsDotBlink 2s ease-in-out ${i * .35}s infinite` }} />
+                        ))}
                     </div>
                 </div>
             </div>
         );
     }
 
+    // ── Active presentation ────────────────────────────────────────────────────
     return (
-        <div className="w-screen h-screen flex items-center justify-center overflow-hidden selection:bg-indigo-500/30 relative font-sans">
-            <AnimatedBackground />
+        <div className="sb-display" style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: '#080808' }}>
+            <style>{css}</style>
+            <Background />
+            <ParticleField />
             <Roster />
 
-            <div key={sessionData.activeFile.url} className="w-full h-full flex items-center justify-center z-10 animate-in fade-in zoom-in-95 duration-700">
+            {/* File-change flash */}
+            {fileTransition && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, pointerEvents: 'none', background: 'rgba(180,180,255,.06)', animation: 'dsFlash .7s ease forwards' }} />
+            )}
+
+            <div key={sessionData.activeFile.url} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, animation: 'dsFadeUp .55s cubic-bezier(.16,1,.3,1) both' }}>
 
                 {sessionData.activeFile.type.includes('image') && (
-                    <div className="w-full h-full flex items-center justify-center overflow-hidden">
-                        <img
-                            src={sessionData.activeFile.url}
-                            className="max-w-full max-h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-10 transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
-                            style={{ transform: `scale(${sessionData.zoomLevel || 1})` }}
-                        />
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        <img src={sessionData.activeFile.url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', padding: 48, transition: 'transform .6s cubic-bezier(.16,1,.3,1)', transform: `scale(${sessionData.zoomLevel || 1})` }} />
                     </div>
                 )}
 
                 {sessionData.activeFile.type.includes('video') && (
-                    <video
-                        ref={videoRef}
-                        src={sessionData.activeFile.url}
-                        className="w-full h-full object-contain p-10 shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
-                    />
+                    <video ref={videoRef} src={sessionData.activeFile.url} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 48 }} />
                 )}
 
                 {sessionData.activeFile.type.includes('pdf') && (
-                    <div className="h-screen w-full overflow-y-auto no-scrollbar scroll-smooth flex flex-col items-center pt-10 pb-40">
+                    <div className="no-scrollbar" style={{ height: '100vh', width: '100%', overflowY: 'auto', scrollBehavior: 'smooth', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40, paddingBottom: 120 }}>
                         <Document
                             file={sessionData.activeFile.url}
                             onLoadSuccess={({ numPages }) => {
                                 setNumPages(numPages);
-                                if (sessionData.totalPages !== numPages) setDoc(doc(db, "sessions", sessionId), { totalPages: numPages }, { merge: true });
+                                if (sessionData.totalPages !== numPages)
+                                    setDoc(doc(db, "sessions", sessionId), { totalPages: numPages }, { merge: true });
                             }}
                             loading={
-                                <div className="flex flex-col items-center gap-6 mt-60 bg-[#0a0a0a]/90 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                                    <Loader2 className="animate-spin text-indigo-500" size={56} />
-                                    <p className="text-neutral-400 font-bold tracking-[0.2em] text-xs uppercase">Rendering Document</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, marginTop: 200, background: 'rgba(12,12,16,.92)', backdropFilter: 'blur(40px)', padding: '48px 56px', borderRadius: 32, border: '1px solid rgba(255,255,255,.06)' }}>
+                                    <Loader2 size={36} style={{ animation: 'dsSpin 1s linear infinite', color: 'rgba(160,160,255,.5)' }} />
+                                    <p style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.2)', letterSpacing: '.25em', textTransform: 'uppercase', margin: 0 }}>Rendering document</p>
                                 </div>
                             }
                         >
-                            {Array.from(new Array(numPages || 1), (el, index) => (
-                                <div key={`page-${index + 1}`} id={`page-${index + 1}`} className="mb-12 shadow-[0_40px_80px_rgba(0,0,0,0.8)] transition-all duration-700 ease-in-out border border-white/10 rounded-lg overflow-hidden relative">
-                                    <Page pageNumber={index + 1} height={window.innerHeight * 0.90} renderAnnotationLayer={false} renderTextLayer={false} className="bg-white" />
+                            {Array.from(new Array(numPages || 1), (_, i) => (
+                                <div key={`page-${i + 1}`} id={`page-${i + 1}`} style={{ marginBottom: 32, border: '1px solid rgba(255,255,255,.06)', borderRadius: 12, overflow: 'hidden', animation: `dsFadeUp .5s cubic-bezier(.16,1,.3,1) ${i * .06}s both` }}>
+                                    <Page pageNumber={i + 1} height={window.innerHeight * .90} renderAnnotationLayer={false} renderTextLayer={false} />
                                 </div>
                             ))}
                         </Document>
@@ -263,11 +308,11 @@ const DisplayScreen = ({ sessionId }) => {
                 )}
             </div>
 
-            <div className="fixed bottom-6 right-6 z-50 group cursor-pointer opacity-30 hover:opacity-100 transition-all duration-500 hover:scale-105">
-                <div className="bg-[#111]/90 border border-white/10 rounded-full backdrop-blur-2xl px-6 py-3 flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                    <span className="text-[10px] font-bold text-neutral-500 tracking-widest uppercase group-hover:hidden">Room Code</span>
-                    <span className="text-sm font-black tracking-[0.2em] text-indigo-400 hidden group-hover:block">{sessionId}</span>
-                </div>
+            {/* Page counter — re-mounts on change to trigger pop animation */}
+            <div key={`${sessionData.activePage}-${sessionData.totalPages}`} style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 50, background: 'rgba(10,10,14,.8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 100, padding: '8px 20px', backdropFilter: 'blur(20px)', animation: 'dsCounterPop .35s cubic-bezier(.16,1,.3,1) both' }}>
+                <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,.4)', letterSpacing: '.05em' }}>
+                    {sessionData.activePage || 1}<span style={{ color: 'rgba(255,255,255,.15)' }}> / {sessionData.totalPages || '—'}</span>
+                </span>
             </div>
         </div>
     );
