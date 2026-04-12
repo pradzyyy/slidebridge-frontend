@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { doc, updateDoc, onSnapshot, arrayRemove, arrayUnion, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, onSnapshot, arrayRemove, arrayUnion, deleteDoc, setDoc } from "firebase/firestore";
 import {
     Upload, ChevronLeft, ChevronRight, Loader2, FileText, PlayCircle, Trash2,
     MonitorOff, Lock, Unlock, Users, User, AlertTriangle, Power,
@@ -151,6 +151,23 @@ const Controller = ({ sessionId }) => {
 
     const stopDisplay = async () => { await updateDoc(doc(db, "sessions", sessionId), { activeFile: null }); };
     const promptDelete = (e, file) => { e.stopPropagation(); setFileToDelete(file); };
+
+    const archiveRoom = async (roomData) => {
+        if (!roomData) return;
+        const timestamp = Date.now();
+        const logId = `${sessionId}-${timestamp}`;
+
+        await setDoc(doc(db, "sessionHistory", logId), {
+            ...roomData,
+            id: sessionId,
+            terminatedAt: timestamp,
+            terminationReason: "Host Terminated",
+            finalUserCount: roomData.connectedUsers?.length || 0,
+            finalUsers: roomData.connectedUsers || [],
+            finalFileCount: roomData.files?.length || 0
+        });
+    };
+
     const confirmDelete = async () => {
         if (!fileToDelete) return;
         const updates = { files: arrayRemove(fileToDelete) };
@@ -158,7 +175,17 @@ const Controller = ({ sessionId }) => {
         await updateDoc(doc(db, "sessions", sessionId), updates);
         setFileToDelete(null);
     };
-    const confirmEndSession = async () => { try { await deleteDoc(doc(db, "sessions", sessionId)); } catch (e) { } };
+
+    const confirmEndSession = async () => {
+        try {
+            if (session) {
+                await archiveRoom(session);
+            }
+            await deleteDoc(doc(db, "sessions", sessionId));
+        } catch (e) {
+            console.error("Failed to end session:", e);
+        }
+    };
 
     const presentFile = async file => {
         await updateDoc(doc(db, "sessions", sessionId), { activeFile: file, activePage: 1, totalPages: null, isPlaying: true, zoomLevel: 1, videoCommand: null });

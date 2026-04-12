@@ -1,44 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from "firebase/firestore";
-import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle, Clock } from 'lucide-react';
+import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle, Clock, History, LayoutGrid } from 'lucide-react';
 import { CreditPill } from '../App';
 
 const Admin = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState("");
     const [activeSessions, setActiveSessions] = useState([]);
+    const [historyLogs, setHistoryLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [roomToDestroy, setRoomToDestroy] = useState(null);
     const [isCleanModalOpen, setIsCleanModalOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isMaintenance, setIsMaintenance] = useState(false);
     const [currentTime, setCurrentTime] = useState(Date.now());
+    const [activeView, setActiveView] = useState('live'); // 'live' or 'history'
 
     const MASTER_PASSWORD = "pradzy";
 
     useEffect(() => { setTimeout(() => setMounted(true), 80); }, []);
 
-    // Live ticker for the uptime clock
     useEffect(() => {
-        const interval = setInterval(() => setCurrentTime(Date.now()), 60000);
+        const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
         return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
         if (!isAuthenticated) return;
 
-        const unsubscribe = onSnapshot(collection(db, "sessions"), (snapshot) => {
+        // Listen for Active Sessions
+        const unsubSessions = onSnapshot(collection(db, "sessions"), (snapshot) => {
             const sessionsData = [];
             snapshot.forEach((doc) => {
                 sessionsData.push({ id: doc.id, ...doc.data() });
             });
-
             sessionsData.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             setActiveSessions(sessionsData);
             setLoading(false);
         });
 
+        // Listen for History Logs
+        const unsubHistory = onSnapshot(collection(db, "sessionHistory"), (snapshot) => {
+            const historyData = [];
+            snapshot.forEach((doc) => {
+                historyData.push({ logId: doc.id, ...doc.data() });
+            });
+            historyData.sort((a, b) => (b.terminatedAt || 0) - (a.terminatedAt || 0));
+            setHistoryLogs(historyData);
+        });
+
+        // Listen for System Settings
         const unsubSettings = onSnapshot(doc(db, "settings", "system"), (docSnap) => {
             if (docSnap.exists()) {
                 setIsMaintenance(docSnap.data().maintenanceMode || false);
@@ -46,7 +58,8 @@ const Admin = () => {
         });
 
         return () => {
-            unsubscribe();
+            unsubSessions();
+            unsubHistory();
             unsubSettings();
         };
     }, [isAuthenticated]);
@@ -77,11 +90,30 @@ const Admin = () => {
         }
     };
 
+    // THE ARCHIVING LOGIC
+    const archiveRoom = async (roomData, reason) => {
+        const timestamp = Date.now();
+        const logId = `${roomData.id}-${timestamp}`; // Prevents overwriting if code is reused
+
+        await setDoc(doc(db, "sessionHistory", logId), {
+            ...roomData,
+            terminatedAt: timestamp,
+            terminationReason: reason,
+            finalUserCount: roomData.connectedUsers?.length || 0,
+            finalUsers: roomData.connectedUsers || [],
+            finalFileCount: roomData.files?.length || 0
+        });
+    };
+
     const confirmDestroyRoom = async () => {
         if (!roomToDestroy) return;
         const sessionToDestroy = roomToDestroy;
 
         try {
+            // 1. Archive the room first
+            await archiveRoom(sessionToDestroy, "Force Terminated");
+
+            // 2. Wipe the files from the cloud
             if (sessionToDestroy.files && sessionToDestroy.files.length > 0) {
                 for (const file of sessionToDestroy.files) {
                     if (file.public_id) {
@@ -94,6 +126,7 @@ const Admin = () => {
                 }
             }
 
+            // 3. Delete the active session
             await deleteDoc(doc(db, "sessions", sessionToDestroy.id));
             setRoomToDestroy(null);
         } catch (err) {
@@ -106,6 +139,8 @@ const Admin = () => {
 
         for (const room of emptyRooms) {
             try {
+                // Archive before purging
+                await archiveRoom(room, "Auto-Purged (Empty)");
                 await deleteDoc(doc(db, "sessions", room.id));
             } catch (err) {
                 console.error("Failed to delete empty room:", room.id, err);
@@ -118,12 +153,22 @@ const Admin = () => {
         if (!timestamp) return "NEW";
         const start = timestamp.toMillis ? timestamp.toMillis() : (timestamp.seconds ? timestamp.seconds * 1000 : timestamp);
         const diffMs = currentTime - start;
-        if (diffMs < 60000) return "< 1M";
-        const diffMins = Math.floor(diffMs / 60000);
-        const hours = Math.floor(diffMins / 60);
-        const mins = diffMins % 60;
-        if (hours > 0) return `${hours}H ${mins}M`;
-        return `${mins}M`;
+        if (diffMs < 0) return "0S";
+
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+
+        if (hours > 0) return `${hours}H ${mins}M ${secs}S`;
+        if (mins > 0) return `${mins}M ${secs}S`;
+        return `${secs}S`;
+    };
+
+    const formatLogTime = (timestamp) => {
+        if (!timestamp) return "Unknown";
+        const date = new Date(timestamp);
+        return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     };
 
     if (!isAuthenticated) {
@@ -210,6 +255,10 @@ const Admin = () => {
                 .sb-action-btn { transition: all 0.2s; }
                 .sb-action-btn:hover { background: #818cf8 !important; color: #fff !important; }
                 .sb-action-btn:active { transform: scale(0.95); }
+                .sb-tab-btn { transition: all 0.2s; border-bottom: 2px solid transparent; }
+                .sb-tab-btn.active { border-bottom-color: #818cf8; color: #fff !important; }
+                .sb-log-row { transition: background 0.2s; }
+                .sb-log-row:hover { background: rgba(255,255,255,0.03); }
             `}</style>
 
             {roomToDestroy && (
@@ -248,7 +297,7 @@ const Admin = () => {
                 </div>
             )}
 
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '24px', animation: 'sbHeaderIn .55s cubic-bezier(.16,1,.3,1) both' }}>
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '24px', animation: 'sbHeaderIn .55s cubic-bezier(.16,1,.3,1) both' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ width: '48px', height: '48px', background: 'rgba(99,102,241,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 0 20px rgba(99,102,241,0.15)', animation: 'sbHeaderIn .55s cubic-bezier(.16,1,.3,1) .06s both' }}>
                         <Activity size={24} color="#818cf8" />
@@ -269,16 +318,6 @@ const Admin = () => {
                     >
                         Maintenance: {isMaintenance ? 'ON' : 'OFF'}
                     </button>
-
-                    {emptyRoomCount > 0 && (
-                        <button
-                            onClick={() => setIsCleanModalOpen(true)}
-                            className="sb-clean-btn"
-                            style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', color: '#a3a3a3', padding: '12px 24px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px' }}
-                        >
-                            <Trash2 size={14} /> Purge Empty ({emptyRoomCount})
-                        </button>
-                    )}
                     <button
                         onClick={() => setIsAuthenticated(false)}
                         className="sb-hover-text"
@@ -289,112 +328,173 @@ const Admin = () => {
                 </div>
             </header>
 
+            {/* TAB NAVIGATION */}
+            <div style={{ display: 'flex', gap: '24px', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <button
+                    onClick={() => setActiveView('live')}
+                    className={`sb-tab-btn ${activeView === 'live' ? 'active' : ''}`}
+                    style={{ background: 'transparent', borderTop: 'none', borderLeft: 'none', borderRight: 'none', color: activeView === 'live' ? '#fff' : '#737373', padding: '0 0 16px 0', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                    <LayoutGrid size={16} /> Live Rooms
+                </button>
+                <button
+                    onClick={() => setActiveView('history')}
+                    className={`sb-tab-btn ${activeView === 'history' ? 'active' : ''}`}
+                    style={{ background: 'transparent', borderTop: 'none', borderLeft: 'none', borderRight: 'none', color: activeView === 'history' ? '#fff' : '#737373', padding: '0 0 16px 0', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                    <History size={16} /> Audit Log ({historyLogs.length})
+                </button>
+
+                {activeView === 'live' && emptyRoomCount > 0 && (
+                    <button
+                        onClick={() => setIsCleanModalOpen(true)}
+                        className="sb-clean-btn"
+                        style={{ marginLeft: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.05)', color: '#a3a3a3', padding: '8px 16px', borderRadius: '8px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}
+                    >
+                        <Trash2 size={12} /> Purge Empty ({emptyRoomCount})
+                    </button>
+                )}
+            </div>
+
             {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', opacity: 0.5 }}>
                     <Activity size={48} color="#6366f1" style={{ marginBottom: '16px', animation: 'sbPulse 1.4s ease-in-out infinite' }} />
                     <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#818cf8' }}>Scanning Servers...</span>
                 </div>
 
-            ) : activeSessions.length === 0 ? (
-                <div
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'sbEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}
-                >
-                    <ServerCrash size={64} color="#737373" style={{ marginBottom: '24px' }} />
-                    <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#737373', margin: '0 0 8px 0' }}>No Active Rooms</h2>
-                    <p style={{ fontSize: '14px', color: '#525252', margin: 0 }}>All SlideBridge servers are currently idle.</p>
-                </div>
-
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', width: '100%', paddingBottom: '100px' }}>
-                    {activeSessions.map((session) => (
-                        <div
-                            key={session.id}
-                            className="sb-panel-card"
-                            style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Room Code</span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>
-                                            <Clock size={10} color="#a3a3a3" />
-                                            <span style={{ fontSize: '9px', fontWeight: 700, color: '#a3a3a3', letterSpacing: '0.1em' }}>{getUptime(session.createdAt)}</span>
+            ) : activeView === 'live' ? (
+                /* LIVE ROOMS VIEW */
+                activeSessions.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'sbEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}>
+                        <ServerCrash size={64} color="#737373" style={{ marginBottom: '24px' }} />
+                        <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#737373', margin: '0 0 8px 0' }}>No Active Rooms</h2>
+                        <p style={{ fontSize: '14px', color: '#525252', margin: 0 }}>All SlideBridge servers are currently idle.</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', width: '100%', paddingBottom: '100px' }}>
+                        {activeSessions.map((session) => (
+                            <div key={session.id} className="sb-panel-card" style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Room Code</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>
+                                                <Clock size={10} color="#a3a3a3" />
+                                                <span style={{ fontSize: '9px', fontWeight: 700, color: '#a3a3a3', letterSpacing: '0.1em', fontVariantNumeric: 'tabular-nums' }}>{getUptime(session.createdAt)}</span>
+                                            </div>
                                         </div>
+                                        <h3 style={{ fontSize: '30px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em', margin: 0 }}>{session.id}</h3>
                                     </div>
-                                    <h3 style={{ fontSize: '30px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em', margin: 0 }}>{session.id}</h3>
+                                    <button
+                                        onClick={() => toggleRoomLock(session.id, session.isLocked)}
+                                        title={session.isLocked ? "Click to Unlock Room" : "Click to Lock Room"}
+                                        className="sb-lock-btn"
+                                        style={{ padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${session.isLocked ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`, background: session.isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: session.isLocked ? '#ef4444' : '#22c55e' }}
+                                    >
+                                        {session.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                                        <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{session.isLocked ? 'Locked' : 'Open'}</span>
+                                    </button>
                                 </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
+                                    {[
+                                        { icon: <Users size={16} />, label: 'Remotes', value: session.connectedUsers?.length || 0 },
+                                        { icon: <FileText size={16} />, label: 'Files Hosted', value: session.files?.length || 0 },
+                                    ].map(({ icon, label, value }) => (
+                                        <div key={label} style={{ background: '#0a0a0a', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#a3a3a3' }}>
+                                                {icon}
+                                                <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</span>
+                                            </div>
+                                            <span style={{ fontSize: '14px', fontWeight: 700 }}>{value}</span>
+                                        </div>
+                                    ))}
+
+                                    {session.connectedUsers?.length > 0 && (
+                                        <div style={{ marginTop: '8px' }}>
+                                            <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Connected Users:</span>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                {session.connectedUsers.map((user, i) => (
+                                                    <span key={i} style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '6px', color: '#d4d4d4', border: '1px solid rgba(255,255,255,0.05)' }}>{user}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {session.files?.length > 0 && (
+                                        <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+                                            <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Hosted Files:</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '128px', overflowY: 'auto' }}>
+                                                {session.files.map((file, i) => (
+                                                    <a
+                                                        key={i}
+                                                        href={file.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="sb-hover-text-indigo"
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', fontWeight: 700, background: '#0a0a0a', padding: '8px 12px', borderRadius: '8px', color: '#d4d4d4', border: '1px solid rgba(255,255,255,0.05)', textDecoration: 'none' }}
+                                                    >
+                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '8px' }}>{file.name}</span>
+                                                        <ExternalLink size={12} style={{ flexShrink: 0 }} />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <button
-                                    onClick={() => toggleRoomLock(session.id, session.isLocked)}
-                                    title={session.isLocked ? "Click to Unlock Room" : "Click to Lock Room"}
-                                    className="sb-lock-btn"
-                                    style={{ padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${session.isLocked ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`, background: session.isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: session.isLocked ? '#ef4444' : '#22c55e' }}
+                                    onClick={() => setRoomToDestroy(session)}
+                                    className="sb-terminate-btn"
+                                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700, padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                                 >
-                                    {session.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
-                                    <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{session.isLocked ? 'Locked' : 'Open'}</span>
+                                    <Trash2 size={16} /> Force Terminate
                                 </button>
                             </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                                {[
-                                    { icon: <Users size={16} />, label: 'Remotes', value: session.connectedUsers?.length || 0 },
-                                    { icon: <FileText size={16} />, label: 'Files Hosted', value: session.files?.length || 0 },
-                                ].map(({ icon, label, value }) => (
-                                    <div
-                                        key={label}
-                                        style={{ background: '#0a0a0a', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.05)' }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#a3a3a3' }}>
-                                            {icon}
-                                            <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</span>
-                                        </div>
-                                        <span style={{ fontSize: '14px', fontWeight: 700 }}>{value}</span>
-                                    </div>
-                                ))}
-
-                                {session.connectedUsers?.length > 0 && (
-                                    <div style={{ marginTop: '8px' }}>
-                                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Connected Users:</span>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                            {session.connectedUsers.map((user, i) => (
-                                                <span key={i} style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '6px', color: '#d4d4d4', border: '1px solid rgba(255,255,255,0.05)' }}>{user}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {session.files?.length > 0 && (
-                                    <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
-                                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Hosted Files:</span>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '128px', overflowY: 'auto' }}>
-                                            {session.files.map((file, i) => (
-                                                <a
-                                                    key={i}
-                                                    href={file.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="sb-hover-text-indigo"
-                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', fontWeight: 700, background: '#0a0a0a', padding: '8px 12px', borderRadius: '8px', color: '#d4d4d4', border: '1px solid rgba(255,255,255,0.05)', textDecoration: 'none' }}
-                                                >
-                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '8px' }}>{file.name}</span>
-                                                    <ExternalLink size={12} style={{ flexShrink: 0 }} />
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <button
-                                onClick={() => setRoomToDestroy(session)}
-                                className="sb-terminate-btn"
-                                style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700, padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                            >
-                                <Trash2 size={16} />
-                                Force Terminate
-                            </button>
+                        ))}
+                    </div>
+                )
+            ) : (
+                /* HISTORY LOG VIEW */
+                historyLogs.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'sbEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}>
+                        <History size={64} color="#737373" style={{ marginBottom: '24px' }} />
+                        <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#737373', margin: '0 0 8px 0' }}>Audit Log Empty</h2>
+                        <p style={{ fontSize: '14px', color: '#525252', margin: 0 }}>Terminated rooms will appear here.</p>
+                    </div>
+                ) : (
+                    <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', overflow: 'hidden', paddingBottom: '100px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1.5fr 2fr 1fr', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: '#0a0a0a', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#737373' }}>
+                            <span>Room</span>
+                            <span>Reason</span>
+                            <span>Terminated At</span>
+                            <span>Final Users</span>
+                            <span>Files Hosted</span>
                         </div>
-                    ))}
-                </div>
+                        {historyLogs.map((log) => (
+                            <div key={log.logId} className="sb-log-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1.5fr 2fr 1fr', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center', fontSize: '14px' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#fff', fontSize: '16px' }}>{log.id}</span>
+                                <span style={{ color: log.terminationReason.includes("Force") ? '#ef4444' : '#a3a3a3', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {log.terminationReason.includes("Force") && <AlertTriangle size={12} />}
+                                    {log.terminationReason}
+                                </span>
+                                <span style={{ color: '#a3a3a3', fontSize: '13px' }}>{formatLogTime(log.terminatedAt)}</span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {log.finalUsers && log.finalUsers.length > 0 ? (
+                                        log.finalUsers.map((user, i) => (
+                                            <span key={i} style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px', color: '#d4d4d4', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                {user}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span style={{ color: '#737373', fontSize: '12px' }}>None</span>
+                                    )}
+                                </div>
+                                <span style={{ color: '#fff', fontWeight: 600 }}>{log.finalFileCount}</span>
+                            </div>
+                        ))}
+                    </div>
+                )
             )}
 
             <CreditPill position="bottom-center" />
