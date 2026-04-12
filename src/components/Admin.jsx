@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from "firebase/firestore";
-import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle, Clock } from 'lucide-react';
 import { CreditPill } from '../App';
 
 const Admin = () => {
@@ -13,10 +13,17 @@ const Admin = () => {
     const [isCleanModalOpen, setIsCleanModalOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isMaintenance, setIsMaintenance] = useState(false);
+    const [currentTime, setCurrentTime] = useState(Date.now());
 
     const MASTER_PASSWORD = "pradzy";
 
     useEffect(() => { setTimeout(() => setMounted(true), 80); }, []);
+
+    // Live ticker for the uptime clock
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -105,6 +112,18 @@ const Admin = () => {
             }
         }
         setIsCleanModalOpen(false);
+    };
+
+    const getUptime = (timestamp) => {
+        if (!timestamp) return "NEW";
+        const start = timestamp.toMillis ? timestamp.toMillis() : (timestamp.seconds ? timestamp.seconds * 1000 : timestamp);
+        const diffMs = currentTime - start;
+        if (diffMs < 60000) return "< 1M";
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        if (hours > 0) return `${hours}H ${mins}M`;
+        return `${mins}M`;
     };
 
     if (!isAuthenticated) {
@@ -295,7 +314,13 @@ const Admin = () => {
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                                 <div>
-                                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '4px', display: 'block' }}>Room Code</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Room Code</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>
+                                            <Clock size={10} color="#a3a3a3" />
+                                            <span style={{ fontSize: '9px', fontWeight: 700, color: '#a3a3a3', letterSpacing: '0.1em' }}>{getUptime(session.createdAt)}</span>
+                                        </div>
+                                    </div>
                                     <h3 style={{ fontSize: '30px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em', margin: 0 }}>{session.id}</h3>
                                 </div>
                                 <button
