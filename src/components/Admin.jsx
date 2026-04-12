@@ -2,7 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from "firebase/firestore";
 import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle } from 'lucide-react';
-import { CreditPill } from '../App'; // IMPORTING THE PILL FROM APP.JSX
+import { CreditPill } from '../App';
+
+const adminCss = `
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes adCardIn    { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes adStatIn    { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes adBtnIn     { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
+    @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
+    @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
+    @keyframes adCodeIn    { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+    .ad-card { transition: border-color .2s, box-shadow .2s; }
+    .ad-card:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 60px rgba(0,0,0,0.4); }
+    .ad-lock-btn:active { animation: adLockBounce .22s ease both; }
+`;
 
 const Admin = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -113,8 +132,8 @@ const Admin = () => {
                 className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 font-sans selection:bg-indigo-500/30"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
+                <style>{adminCss}</style>
                 <style>{`
-                    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
                     @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
                     @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
                     @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -178,24 +197,7 @@ const Admin = () => {
 
     return (
         <div className="min-h-screen bg-[#050505] text-white p-8 font-sans selection:bg-indigo-500/30">
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
-
-                @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes adCardIn    { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-                @keyframes adStatIn    { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-                @keyframes adBtnIn     { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
-                @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
-                @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
-                @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
-                @keyframes adCodeIn    { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
-
-                .ad-card { transition: border-color .2s, box-shadow .2s; }
-                .ad-card:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 60px rgba(0,0,0,0.4); }
-                .ad-lock-btn:active { animation: adLockBounce .22s ease both; }
-            `}</style>
+            <style>{adminCss}</style>
 
             {roomToDestroy && (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/40 backdrop-blur-md" style={{ animation: 'adFadeIn .2s ease both' }}>
@@ -299,10 +301,10 @@ const Admin = () => {
                         <div
                             key={session.id}
                             className="ad-card bg-[#111] border border-white/5 rounded-[2rem] p-6 flex flex-col relative overflow-hidden group hover:border-white/10 shadow-2xl"
-                            style={{ animation: `adCardIn .5s cubic-bezier(.16,1,.3,1) ${0.1 + idx * 0.07}s both` }}
+                            style={{ animation: `adCardIn .4s cubic-bezier(.16,1,.3,1) both` }}
                         >
                             <div className="flex justify-between items-start mb-6">
-                                <div style={{ animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.22 + idx * 0.07}s both` }}>
+                                <div style={{ animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) both` }}>
                                     <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-1 block">Room Code</span>
                                     <h3 className="text-3xl font-black font-mono tracking-widest">{session.id}</h3>
                                 </div>
@@ -310,7 +312,7 @@ const Admin = () => {
                                     onClick={() => toggleRoomLock(session.id, session.isLocked)}
                                     title={session.isLocked ? "Click to Unlock Room" : "Click to Lock Room"}
                                     className={`ad-lock-btn px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-all cursor-pointer hover:opacity-80 ${session.isLocked ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-green-500/10 border-green-500/20 text-green-500'}`}
-                                    style={{ animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.28 + idx * 0.07}s both` }}
+                                    style={{ animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) both` }}
                                 >
                                     {session.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
                                     <span className="text-[9px] font-bold uppercase tracking-widest">{session.isLocked ? 'Locked' : 'Open'}</span>
@@ -319,13 +321,13 @@ const Admin = () => {
 
                             <div className="flex flex-col gap-3 mb-8 flex-1">
                                 {[
-                                    { icon: <Users size={16} />, label: 'Remotes', value: session.connectedUsers?.length || 0, delay: 0.32 + idx * 0.07 },
-                                    { icon: <FileText size={16} />, label: 'Files Hosted', value: session.files?.length || 0, delay: 0.38 + idx * 0.07 },
-                                ].map(({ icon, label, value, delay }) => (
+                                    { icon: <Users size={16} />, label: 'Remotes', value: session.connectedUsers?.length || 0 },
+                                    { icon: <FileText size={16} />, label: 'Files Hosted', value: session.files?.length || 0 },
+                                ].map(({ icon, label, value }) => (
                                     <div
                                         key={label}
                                         className="bg-[#0a0a0a] rounded-xl p-3 flex items-center justify-between border border-white/5"
-                                        style={{ animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${delay}s both` }}
+                                        style={{ animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) both` }}
                                     >
                                         <div className="flex items-center gap-3 text-neutral-400">
                                             {icon}
@@ -336,7 +338,7 @@ const Admin = () => {
                                 ))}
 
                                 {session.connectedUsers?.length > 0 && (
-                                    <div className="mt-2" style={{ animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.44 + idx * 0.07}s both` }}>
+                                    <div className="mt-2" style={{ animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) both` }}>
                                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Connected Users:</span>
                                         <div className="flex flex-wrap gap-2">
                                             {session.connectedUsers.map((user, i) => (
@@ -347,7 +349,7 @@ const Admin = () => {
                                 )}
 
                                 {session.files?.length > 0 && (
-                                    <div className="mt-4 border-t border-white/5 pt-4" style={{ animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.5 + idx * 0.07}s both` }}>
+                                    <div className="mt-4 border-t border-white/5 pt-4" style={{ animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) both` }}>
                                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Hosted Files:</span>
                                         <div className="flex flex-col gap-2 max-h-32 overflow-y-auto [&::-webkit-scrollbar]:hidden">
                                             {session.files.map((file, i) => (
@@ -370,7 +372,7 @@ const Admin = () => {
                             <button
                                 onClick={() => setRoomToDestroy(session)}
                                 className="w-full bg-[#0a0a0a] hover:bg-red-600 border border-red-500/20 text-red-500 hover:text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 text-xs uppercase tracking-widest group/btn"
-                                style={{ animation: `adBtnIn .4s cubic-bezier(.16,1,.3,1) ${0.56 + idx * 0.07}s both` }}
+                                style={{ animation: `adBtnIn .4s cubic-bezier(.16,1,.3,1) both` }}
                             >
                                 <Trash2 size={16} className="group-hover/btn:animate-pulse" />
                                 Force Terminate
