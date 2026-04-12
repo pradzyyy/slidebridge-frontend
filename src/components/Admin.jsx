@@ -2,10 +2,95 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from "firebase/firestore";
 import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle } from 'lucide-react';
-import { CreditPill } from '../App';
 
-// MOVED OUTSIDE THE COMPONENT TO PREVENT RE-RENDER FREEZES
+const CreditPill = () => (
+    <div className="sb-pill-wrap" style={{
+        position: 'fixed',
+        bottom: '32px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 99999,
+        display: 'inline-block',
+        borderRadius: '100px',
+        padding: '1.5px',
+        background: 'conic-gradient(from var(--sb-angle, 0deg), #000000 0%, #ffffff 25%, #888888 50%, #ffffff 75%, #000000 100%)',
+        animation: 'sbSpinBW 3s linear infinite',
+    }}>
+        <a
+            href="https://www.linkedin.com/in/pradyumnpandhurnekar/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sb-pill-inner"
+            style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: '#0a0a0a',
+                borderRadius: '100px',
+                padding: '10px 14px',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                gap: 0,
+                transition: 'padding 0.4s cubic-bezier(0.16,1,0.3,1)',
+            }}
+        >
+            <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '15px',
+                fontStyle: 'italic',
+                fontWeight: 700,
+                color: 'white',
+                letterSpacing: '-0.02em',
+                lineHeight: 1,
+                paddingBottom: '1px',
+                flexShrink: 0,
+            }}>/p</span>
+            <div className="sb-pill-divider" style={{
+                width: 0,
+                height: '14px',
+                background: 'rgba(255,255,255,0.15)',
+                flexShrink: 0,
+                transition: 'width 0.4s cubic-bezier(0.16,1,0.3,1), margin 0.4s cubic-bezier(0.16,1,0.3,1)',
+            }} />
+            <span className="sb-pill-text" style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.45)',
+                letterSpacing: '0.13em',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+                maxWidth: 0,
+                overflow: 'hidden',
+                opacity: 0,
+                transition: 'max-width 0.45s cubic-bezier(0.16,1,0.3,1), opacity 0.3s, padding 0.4s cubic-bezier(0.16,1,0.3,1)',
+            }}>
+                built by <span style={{ color: 'rgba(255,255,255,0.85)' }}>pradzyyy</span>
+            </span>
+        </a>
+    </div>
+);
+
 const adminCss = `
+    @property --sb-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+    @keyframes sbSpinBW {
+      to { --sb-angle: 360deg; }
+    }
+    .sb-pill-wrap:hover .sb-pill-text {
+      max-width: 160px;
+      opacity: 1;
+    }
+    .sb-pill-wrap:hover .sb-pill-divider {
+      width: 1px;
+      margin: 0 10px;
+    }
+    .sb-pill-wrap:hover .sb-pill-inner {
+      padding: 10px 22px;
+    }
+
     @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
     @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
     @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -182,7 +267,7 @@ const Admin = () => {
                     </form>
                 </div>
 
-                <CreditPill position="bottom-center" />
+                <CreditPill />
             </div>
         );
     }
@@ -277,9 +362,7 @@ const Admin = () => {
                 </div>
 
             ) : activeSessions.length === 0 ? (
-                <div
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'adEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}
-                >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'adEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}>
                     <ServerCrash size={64} color="#737373" style={{ marginBottom: '24px' }} />
                     <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#737373', margin: '0 0 8px 0' }}>No Active Rooms</h2>
                     <p style={{ fontSize: '14px', color: '#525252', margin: 0 }}>All SlideBridge servers are currently idle.</p>
@@ -372,7 +455,7 @@ const Admin = () => {
                 </div>
             )}
 
-            <CreditPill position="bottom-center" />
+            <CreditPill />
         </div>
     );
 };
