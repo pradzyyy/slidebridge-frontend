@@ -4,12 +4,12 @@ import { getStorage } from "firebase/storage";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyD0EvwlnkP6UY34JQWOsce9HxNeAhk3m2c",
+    apiKey: "AIzaSyBGaDBUj9vOKM-8K5Av0hDYtMuzzApwdt4",
     authDomain: "slidebridgep.firebaseapp.com",
     projectId: "slidebridgep",
     storageBucket: "slidebridgep.firebasestorage.app",
     messagingSenderId: "289465777358",
-    appId: "1:289465777358:web:8dc641065e81667477249f"
+    appId: "1:289465777358:web:91db76db67ed5b7c77249f"
 };
 
 const app = initializeApp(firebaseConfig);
