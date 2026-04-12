@@ -370,6 +370,7 @@ export const CreditPill = ({ position = 'bottom-center' }) => {
     </>
   );
 };
+
 const App = () => {
   const [mode, setMode] = useState(null);
   const [sessionId, setSessionId] = useState(null);
@@ -382,6 +383,7 @@ const App = () => {
 
   // SCANNER STATE
   const [isScanning, setIsScanning] = useState(false);
+  const [scanSuccess, setScanSuccess] = useState(false); // NEW POPUP STATE
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -467,18 +469,26 @@ const App = () => {
 
   const handleScan = (data) => {
     setIsScanning(false);
+    let foundCode = "";
+
     try {
       const url = new URL(data);
       const sid = url.searchParams.get('sid');
       if (sid) {
-        setJoinCode(sid);
+        foundCode = sid;
       } else if (data.length === 6) {
-        setJoinCode(data);
+        foundCode = data;
       }
     } catch {
-      if (data.length === 6) {
-        setJoinCode(data);
+      if (data.trim().length === 6) {
+        foundCode = data.trim().toUpperCase();
       }
+    }
+
+    if (foundCode) {
+      setJoinCode(foundCode);
+      setScanSuccess(true);
+      setTimeout(() => setScanSuccess(false), 5000);
     }
   };
 
@@ -652,6 +662,10 @@ const App = () => {
             90% { opacity: 1; } 
             100% { top: 100%; opacity: 0; } 
         }
+        @keyframes toastDrop { 
+            from { opacity: 0; transform: translate(-50%, -20px); } 
+            to { opacity: 1; transform: translate(-50%, 0); } 
+        }
 
         .sb-launch-btn { 
             transition: transform 0.18s cubic-bezier(0.16,1,0.3,1), background 0.15s; 
@@ -710,121 +724,33 @@ const App = () => {
             transform: scale(0.97); 
             background: rgba(140, 140, 255, 0.15); 
         }
-
-        @property --sb-angle { 
-            syntax: '<angle>'; 
-            initial-value: 0deg; 
-            inherits: false; 
-        }
-        
-        @keyframes sbSpinBW { 
-            to { --sb-angle: 360deg; } 
-        }
-        
-        .sb-pill-wrap { 
-            position: fixed; 
-            bottom: 32px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            z-index: 99999; 
-            display: inline-block; 
-            border-radius: 100px; 
-            padding: 1.5px; 
-            background: conic-gradient(from var(--sb-angle, 0deg), rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.5) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.5) 75%, rgba(255,255,255,0.1) 100%); 
-            animation: sbSpinBW 4s linear infinite; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            cursor: pointer; 
-            -webkit-tap-highlight-color: transparent; 
-        }
-        
-        .sb-pill-inner { 
-            display: flex; 
-            align-items: center; 
-            background: #0a0a0a; 
-            border-radius: 100px; 
-            padding: 10px 14px; 
-            text-decoration: none; 
-            overflow: hidden; 
-            transition: padding 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease; 
-        }
-        
-        .sb-pill-wrap.is-expanded .sb-pill-inner { 
-            padding: 10px 22px 10px 16px; 
-            box-shadow: inset 0 0 20px rgba(140, 140, 255, 0.15); 
-        }
-        
-        .sb-pill-divider { 
-            width: 0; 
-            height: 14px; 
-            background: rgba(255,255,255,0.15); 
-            flex-shrink: 0; 
-            transition: width 0.4s cubic-bezier(0.16,1,0.3,1), margin 0.4s cubic-bezier(0.16,1,0.3,1); 
-        }
-        
-        .sb-pill-wrap.is-expanded .sb-pill-divider { 
-            width: 1px; 
-            margin: 0 12px; 
-        }
-        
-        .sb-pill-text { 
-            font-size: 11px; 
-            font-weight: 600; 
-            color: rgba(255,255,255,0.45); 
-            letter-spacing: 0.13em; 
-            text-transform: uppercase; 
-            white-space: nowrap; 
-            max-width: 0; 
-            opacity: 0; 
-            transition: max-width 0.45s cubic-bezier(0.16,1,0.3,1), opacity 0.3s; 
-            font-family: 'DM Sans', sans-serif; 
-        }
-        
-        .sb-pill-wrap.is-expanded .sb-pill-text { 
-            max-width: 160px; 
-            opacity: 1; 
-        }
-        
-        .sb-li-pill-logo { 
-            font-family: 'DM Mono', monospace; 
-            font-size: 16px; 
-            font-style: italic; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            flex-shrink: 0; 
-            line-height: 1; 
-            padding-bottom: 2px; 
-            width: 28px; 
-        }
-        
-        .sb-slash { 
-            color: rgba(255, 255, 255, 0.3); 
-            font-weight: 300; 
-            transition: color 0.4s ease, text-shadow 0.4s ease; 
-        }
-        
-        .sb-p { 
-            font-weight: 700; 
-            margin-left: -1px; 
-            background: linear-gradient(135deg, #ffffff 0%, #8a8a9a 100%); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            transition: all 0.4s ease; 
-            padding-right: 4px; 
-        }
-        
-        .sb-pill-wrap.is-expanded .sb-slash { 
-            color: rgba(140, 140, 255, 0.6); 
-            text-shadow: 0 0 12px rgba(140, 140, 255, 0.5); 
-        }
-        
-        .sb-pill-wrap.is-expanded .sb-p { 
-            background: linear-gradient(135deg, #ffffff 0%, #8c8cff 100%); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            filter: drop-shadow(0 2px 4px rgba(140, 140, 255, 0.4)); 
-        }
       `}</style>
+
+      {/* SUCCESS TOAST POPUP */}
+      {scanSuccess && (
+        <div style={{
+          position: 'fixed',
+          top: '40px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 999999,
+          background: 'rgba(74, 222, 128, 0.1)',
+          border: '1px solid rgba(74, 222, 128, 0.2)',
+          borderRadius: '16px',
+          padding: '14px 24px',
+          backdropFilter: 'blur(20px)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+          animation: 'toastDrop 0.4s cubic-bezier(0.16,1,0.3,1) both'
+        }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 10px #4ade80' }} />
+          <span style={{ fontSize: '13px', fontWeight: 500, color: '#fff', letterSpacing: '0.02em' }}>
+            Room code captured. <strong>Enter your name to join.</strong>
+          </span>
+        </div>
+      )}
 
       {/* SCANNER MODAL OVERLAY */}
       {isScanning && (
@@ -856,8 +782,7 @@ const App = () => {
             zIndex: 2,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.6)'
+            justifyContent: 'center'
           }}>
             <div style={{
               width: 260,
