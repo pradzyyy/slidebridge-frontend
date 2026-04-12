@@ -112,28 +112,28 @@ const Admin = () => {
             <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'DM Sans', sans-serif" }}>
                 <style>{`
                     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
-                    @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-                    @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
-                    @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-                    @keyframes adInputIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
-                    @keyframes adBtnIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-                    @keyframes adGlowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)} 50%{box-shadow:0 0 40px 4px rgba(99,102,241,0.09)} }
-                    .ad-input:focus { outline: none; border-color: rgba(99,102,241,0.5) !important; }
-                    .ad-btn { transition: all 0.2s; }
-                    .ad-btn:hover { background: #818cf8 !important; color: #fff !important; }
-                    .ad-btn:active { transform: scale(0.95); }
+                    @keyframes sbLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+                    @keyframes sbIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
+                    @keyframes sbTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+                    @keyframes sbInputIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+                    @keyframes sbBtnIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+                    @keyframes sbGlowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)} 50%{box-shadow:0 0 40px 4px rgba(99,102,241,0.09)} }
+                    .sb-input-field:focus { outline: none; border-color: rgba(99,102,241,0.5) !important; }
+                    .sb-action-btn { transition: all 0.2s; }
+                    .sb-action-btn:hover { background: #818cf8 !important; color: #fff !important; }
+                    .sb-action-btn:active { transform: scale(0.95); }
                 `}</style>
                 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(49,46,129,0.1) 0%, #050505 70%, #050505 100%)', pointerEvents: 'none' }} />
 
-                <div style={{ zIndex: 10, width: '100%', maxWidth: '380px', background: '#111', border: '1px solid rgba(255,255,255,0.05)', padding: '40px', borderRadius: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', animation: 'adLoginIn .6s cubic-bezier(.16,1,.3,1) .1s both, adGlowPulse 5s ease-in-out 1s infinite' }}>
-                    <div style={{ width: '80px', height: '80px', background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid rgba(99,102,241,0.2)', animation: 'adIconSpin .6s cubic-bezier(.16,1,.3,1) .35s both' }}>
+                <div style={{ zIndex: 10, width: '100%', maxWidth: '380px', background: '#111', border: '1px solid rgba(255,255,255,0.05)', padding: '40px', borderRadius: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', animation: 'sbLoginIn .6s cubic-bezier(.16,1,.3,1) .1s both, sbGlowPulse 5s ease-in-out 1s infinite' }}>
+                    <div style={{ width: '80px', height: '80px', background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid rgba(99,102,241,0.2)', animation: 'sbIconSpin .6s cubic-bezier(.16,1,.3,1) .35s both' }}>
                         <ShieldAlert size={36} color="#818cf8" />
                     </div>
 
-                    <h2 style={{ fontSize: '30px', fontWeight: 900, color: '#fff', marginBottom: '8px', letterSpacing: '-0.05em', animation: 'adTitleIn .5s cubic-bezier(.16,1,.3,1) .45s both' }}>
+                    <h2 style={{ fontSize: '30px', fontWeight: 900, color: '#fff', marginBottom: '8px', letterSpacing: '-0.05em', animation: 'sbTitleIn .5s cubic-bezier(.16,1,.3,1) .45s both' }}>
                         Command Center
                     </h2>
-                    <p style={{ fontSize: '14px', color: '#737373', fontWeight: 500, textAlign: 'center', marginBottom: '32px', animation: 'adTitleIn .5s cubic-bezier(.16,1,.3,1) .52s both' }}>
+                    <p style={{ fontSize: '14px', color: '#737373', fontWeight: 500, textAlign: 'center', marginBottom: '32px', animation: 'sbTitleIn .5s cubic-bezier(.16,1,.3,1) .52s both' }}>
                         Enter master override sequence.
                     </p>
 
@@ -144,13 +144,13 @@ const Admin = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             autoFocus
-                            className="ad-input"
-                            style={{ width: '100%', boxSizing: 'border-box', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', textAlign: 'center', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px', borderRadius: '16px', transition: 'all 0.2s', animation: 'adInputIn .5s cubic-bezier(.16,1,.3,1) .6s both' }}
+                            className="sb-input-field"
+                            style={{ width: '100%', boxSizing: 'border-box', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', color: '#fff', textAlign: 'center', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px', borderRadius: '16px', transition: 'all 0.2s', animation: 'sbInputIn .5s cubic-bezier(.16,1,.3,1) .6s both' }}
                         />
                         <button
                             type="submit"
-                            className="ad-btn"
-                            style={{ width: '100%', background: '#fff', color: '#050505', border: 'none', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', animation: 'adBtnIn .5s cubic-bezier(.16,1,.3,1) .68s both' }}
+                            className="sb-action-btn"
+                            style={{ width: '100%', background: '#fff', color: '#050505', border: 'none', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', animation: 'sbBtnIn .5s cubic-bezier(.16,1,.3,1) .68s both' }}
                         >
                             Authenticate
                         </button>
@@ -168,31 +168,34 @@ const Admin = () => {
         <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '32px', fontFamily: "'DM Sans', sans-serif" }}>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
-                @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
-                @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
-                @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
-                @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
-                @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
+                @keyframes sbHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes sbEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
+                @keyframes sbPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
+                @keyframes sbModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+                @keyframes sbFadeIn    { from{opacity:0} to{opacity:1} }
+                @keyframes sbLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
 
-                .sb-admin-card { transition: border-color 0.2s, box-shadow 0.2s; }
-                .sb-admin-card:hover { border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-                .ad-lock-btn { transition: all 0.2s; cursor: pointer; }
-                .ad-lock-btn:active { animation: adLockBounce 0.22s ease both; }
-                .ad-hover-text { transition: color 0.2s; cursor: pointer; }
-                .ad-hover-text:hover { color: #fff !important; }
-                .ad-hover-text-indigo { transition: color 0.2s; cursor: pointer; }
-                .ad-hover-text-indigo:hover { color: #818cf8 !important; }
-                .ad-terminate-btn { transition: all 0.2s; cursor: pointer; }
-                .ad-terminate-btn:hover { background: #dc2626 !important; color: #fff !important; }
-                .ad-clean-btn { transition: all 0.2s; cursor: pointer; }
-                .ad-clean-btn:active { transform: scale(0.95); }
-                .ad-clean-btn:hover { background: rgba(79,70,229,0.2) !important; border-color: rgba(99,102,241,0.3) !important; color: #818cf8 !important; }
+                .sb-panel-card { transition: border-color 0.2s, box-shadow 0.2s; }
+                .sb-panel-card:hover { border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+                .sb-lock-btn { transition: all 0.2s; cursor: pointer; }
+                .sb-lock-btn:active { animation: sbLockBounce 0.22s ease both; }
+                .sb-hover-text { transition: color 0.2s; cursor: pointer; }
+                .sb-hover-text:hover { color: #fff !important; }
+                .sb-hover-text-indigo { transition: color 0.2s; cursor: pointer; }
+                .sb-hover-text-indigo:hover { color: #818cf8 !important; }
+                .sb-terminate-btn { transition: all 0.2s; cursor: pointer; }
+                .sb-terminate-btn:hover { background: #dc2626 !important; color: #fff !important; }
+                .sb-clean-btn { transition: all 0.2s; cursor: pointer; }
+                .sb-clean-btn:active { transform: scale(0.95); }
+                .sb-clean-btn:hover { background: rgba(79,70,229,0.2) !important; border-color: rgba(99,102,241,0.3) !important; color: #818cf8 !important; }
+                .sb-action-btn { transition: all 0.2s; }
+                .sb-action-btn:hover { background: #818cf8 !important; color: #fff !important; }
+                .sb-action-btn:active { transform: scale(0.95); }
             `}</style>
 
             {roomToDestroy && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', animation: 'adFadeIn .2s ease both' }}>
-                    <div style={{ width: '100%', maxWidth: '380px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', padding: '32px', borderRadius: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', animation: 'adModalIn .35s cubic-bezier(.16,1,.3,1) both' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', animation: 'sbFadeIn .2s ease both' }}>
+                    <div style={{ width: '100%', maxWidth: '380px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', padding: '32px', borderRadius: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', animation: 'sbModalIn .35s cubic-bezier(.16,1,.3,1) both' }}>
                         <div style={{ width: '64px', height: '64px', background: 'rgba(239,68,68,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid rgba(239,68,68,0.2)' }}>
                             <AlertTriangle size={28} color="#ef4444" />
                         </div>
@@ -201,16 +204,16 @@ const Admin = () => {
                             Are you sure you want to terminate room <span style={{ color: '#fff', fontWeight: 700 }}>{roomToDestroy.id}</span>? All hosted files will be permanently deleted from the cloud.
                         </p>
                         <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                            <button onClick={() => setRoomToDestroy(null)} className="ad-btn" style={{ flex: 1, background: '#1a1a1a', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px' }}>Cancel</button>
-                            <button onClick={confirmDestroyRoom} className="ad-btn" style={{ flex: 1, background: '#dc2626', color: '#fff', border: 'none', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px 0 rgba(220,38,38,0.39)' }}>Terminate</button>
+                            <button onClick={() => setRoomToDestroy(null)} className="sb-action-btn" style={{ flex: 1, background: '#1a1a1a', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px' }}>Cancel</button>
+                            <button onClick={confirmDestroyRoom} className="sb-action-btn" style={{ flex: 1, background: '#dc2626', color: '#fff', border: 'none', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px 0 rgba(220,38,38,0.39)' }}>Terminate</button>
                         </div>
                     </div>
                 </div>
             )}
 
             {isCleanModalOpen && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', animation: 'adFadeIn .2s ease both' }}>
-                    <div style={{ width: '100%', maxWidth: '380px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', padding: '32px', borderRadius: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', animation: 'adModalIn .35s cubic-bezier(.16,1,.3,1) both' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', animation: 'sbFadeIn .2s ease both' }}>
+                    <div style={{ width: '100%', maxWidth: '380px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', padding: '32px', borderRadius: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', animation: 'sbModalIn .35s cubic-bezier(.16,1,.3,1) both' }}>
                         <div style={{ width: '64px', height: '64px', background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid rgba(99,102,241,0.2)' }}>
                             <Trash2 size={28} color="#818cf8" />
                         </div>
@@ -219,30 +222,30 @@ const Admin = () => {
                             This will instantly destroy <span style={{ color: '#fff', fontWeight: 700 }}>{emptyRoomCount}</span> inactive rooms that have no uploaded files.
                         </p>
                         <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                            <button onClick={() => setIsCleanModalOpen(false)} className="ad-btn" style={{ flex: 1, background: '#1a1a1a', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px' }}>Cancel</button>
-                            <button onClick={cleanEmptyRooms} className="ad-btn" style={{ flex: 1, background: '#4f46e5', color: '#fff', border: 'none', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px 0 rgba(79,70,229,0.39)' }}>Purge All</button>
+                            <button onClick={() => setIsCleanModalOpen(false)} className="sb-action-btn" style={{ flex: 1, background: '#1a1a1a', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px' }}>Cancel</button>
+                            <button onClick={cleanEmptyRooms} className="sb-action-btn" style={{ flex: 1, background: '#4f46e5', color: '#fff', border: 'none', fontWeight: 700, padding: '16px', borderRadius: '16px', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px 0 rgba(79,70,229,0.39)' }}>Purge All</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '24px', animation: 'adHeaderIn .55s cubic-bezier(.16,1,.3,1) both' }}>
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '24px', animation: 'sbHeaderIn .55s cubic-bezier(.16,1,.3,1) both' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '48px', height: '48px', background: 'rgba(99,102,241,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 0 20px rgba(99,102,241,0.15)', animation: 'adHeaderIn .55s cubic-bezier(.16,1,.3,1) .06s both' }}>
+                    <div style={{ width: '48px', height: '48px', background: 'rgba(99,102,241,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 0 20px rgba(99,102,241,0.15)', animation: 'sbHeaderIn .55s cubic-bezier(.16,1,.3,1) .06s both' }}>
                         <Activity size={24} color="#818cf8" />
                     </div>
-                    <div style={{ animation: 'adHeaderIn .55s cubic-bezier(.16,1,.3,1) .1s both' }}>
+                    <div style={{ animation: 'sbHeaderIn .55s cubic-bezier(.16,1,.3,1) .1s both' }}>
                         <h1 style={{ fontSize: '30px', margin: 0, fontWeight: 900, letterSpacing: '-0.05em', color: '#fff' }}>System Overview</h1>
                         <span style={{ fontSize: '10px', fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                            <div style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%', animation: 'adPulse 2s ease-in-out infinite' }} />
+                            <div style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%', animation: 'sbPulse 2s ease-in-out infinite' }} />
                             {activeSessions.length} Active Sessions
                         </span>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '12px', animation: 'adHeaderIn .55s cubic-bezier(.16,1,.3,1) .18s both' }}>
+                <div style={{ display: 'flex', gap: '12px', animation: 'sbHeaderIn .55s cubic-bezier(.16,1,.3,1) .18s both' }}>
                     <button
                         onClick={toggleMaintenance}
-                        className="ad-clean-btn"
+                        className="sb-clean-btn"
                         style={{ background: isMaintenance ? 'rgba(239,68,68,0.1)' : '#111', border: `1px solid ${isMaintenance ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.05)'}`, color: isMaintenance ? '#f87171' : '#a3a3a3', padding: '12px 24px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
                         Maintenance: {isMaintenance ? 'ON' : 'OFF'}
@@ -251,7 +254,7 @@ const Admin = () => {
                     {emptyRoomCount > 0 && (
                         <button
                             onClick={() => setIsCleanModalOpen(true)}
-                            className="ad-clean-btn"
+                            className="sb-clean-btn"
                             style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', color: '#a3a3a3', padding: '12px 24px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '8px' }}
                         >
                             <Trash2 size={14} /> Purge Empty ({emptyRoomCount})
@@ -259,7 +262,7 @@ const Admin = () => {
                     )}
                     <button
                         onClick={() => setIsAuthenticated(false)}
-                        className="ad-hover-text"
+                        className="sb-hover-text"
                         style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', color: '#a3a3a3', padding: '12px 24px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
                     >
                         Lock Terminal
@@ -269,13 +272,13 @@ const Admin = () => {
 
             {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', opacity: 0.5 }}>
-                    <Activity size={48} color="#6366f1" style={{ marginBottom: '16px', animation: 'adPulse 1.4s ease-in-out infinite' }} />
+                    <Activity size={48} color="#6366f1" style={{ marginBottom: '16px', animation: 'sbPulse 1.4s ease-in-out infinite' }} />
                     <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#818cf8' }}>Scanning Servers...</span>
                 </div>
 
             ) : activeSessions.length === 0 ? (
                 <div
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'adEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'sbEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}
                 >
                     <ServerCrash size={64} color="#737373" style={{ marginBottom: '24px' }} />
                     <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#737373', margin: '0 0 8px 0' }}>No Active Rooms</h2>
@@ -287,7 +290,7 @@ const Admin = () => {
                     {activeSessions.map((session) => (
                         <div
                             key={session.id}
-                            className="sb-admin-card"
+                            className="sb-panel-card"
                             style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
@@ -298,7 +301,7 @@ const Admin = () => {
                                 <button
                                     onClick={() => toggleRoomLock(session.id, session.isLocked)}
                                     title={session.isLocked ? "Click to Unlock Room" : "Click to Lock Room"}
-                                    className="ad-lock-btn"
+                                    className="sb-lock-btn"
                                     style={{ padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${session.isLocked ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`, background: session.isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: session.isLocked ? '#ef4444' : '#22c55e' }}
                                 >
                                     {session.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
@@ -344,7 +347,7 @@ const Admin = () => {
                                                     href={file.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="ad-hover-text-indigo"
+                                                    className="sb-hover-text-indigo"
                                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', fontWeight: 700, background: '#0a0a0a', padding: '8px 12px', borderRadius: '8px', color: '#d4d4d4', border: '1px solid rgba(255,255,255,0.05)', textDecoration: 'none' }}
                                                 >
                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '8px' }}>{file.name}</span>
@@ -358,7 +361,7 @@ const Admin = () => {
 
                             <button
                                 onClick={() => setRoomToDestroy(session)}
-                                className="ad-terminate-btn"
+                                className="sb-terminate-btn"
                                 style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700, padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                             >
                                 <Trash2 size={16} />
