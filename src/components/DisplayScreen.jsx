@@ -1,18 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebase';
-import { doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, updateDoc, arrayRemove } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
-import { MonitorPlay, Loader2, KeyRound, Lock, Unlock, Users } from "lucide-react";
+import { MonitorPlay, Loader2, KeyRound, Lock, Unlock, Users, X } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { CreditPill } from '../App';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
     import.meta.url,
 ).toString();
 
-// ── Particle canvas ───────────────────────────────────────────────────────────
 const ParticleField = () => {
     const ref = useRef(null);
     useEffect(() => {
@@ -50,7 +50,6 @@ const ParticleField = () => {
     return <canvas ref={ref} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.65 }} />;
 };
 
-// ── Breathing rings behind QR ─────────────────────────────────────────────────
 const BreathingRings = () => (
     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', zIndex: 0 }}>
         {[1, 2, 3, 4].map(i => (
@@ -121,6 +120,16 @@ const DisplayScreen = ({ sessionId }) => {
         try { await updateDoc(doc(db, "sessions", sessionId), { isLocked: false }); } catch (e) { }
     };
 
+    const kickUser = async (userToKick) => {
+        try {
+            await updateDoc(doc(db, "sessions", sessionId), {
+                connectedUsers: arrayRemove(userToKick)
+            });
+        } catch (err) {
+            console.error("Failed to kick user:", err);
+        }
+    };
+
     const css = `
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Poppins:ital,wght@0,400;0,700;0,800;1,700;1,800&display=swap');
         *{box-sizing:border-box;}
@@ -141,6 +150,117 @@ const DisplayScreen = ({ sessionId }) => {
         .sb-display{font-family:'DM Sans',sans-serif;}
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
+
+        /* --- THE STEALTH ROSTER CSS --- */
+        .ds-roster-wrap {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .ds-roster-pill {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            background: rgba(14,14,18,0.85);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 100px;
+            backdrop-filter: blur(20px);
+            height: 36px;
+            padding: 0 14px; /* Tight padding to look like a circle initially */
+            gap: 0;
+            transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+            position: relative;
+            z-index: 2;
+        }
+        .ds-roster-wrap:hover .ds-roster-pill {
+            background: rgba(30,30,40,0.95);
+            border-color: rgba(255,255,255,0.15);
+            padding: 0 20px;
+            gap: 10px; /* Opens up the gap to reveal text */
+        }
+        .ds-roster-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: dsPulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        .ds-roster-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: max-width 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.3s;
+        }
+        .ds-roster-wrap:hover .ds-roster-text {
+            max-width: 120px;
+            opacity: 1;
+        }
+        /* The invisible bridge that fixes the hover gap bug */
+        .ds-roster-dropdown-wrap {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            padding-top: 8px; 
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+            z-index: 3;
+        }
+        .ds-roster-wrap:hover .ds-roster-dropdown-wrap {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .ds-roster-dropdown {
+            background: rgba(14,14,18,0.95);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: max-content;
+            min-width: 180px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .ds-roster-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: all 0.2s;
+        }
+        .ds-roster-item:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.1);
+        }
+        .ds-kick-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.3);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ds-kick-btn:hover {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
     `;
 
     const Background = () => (
@@ -151,7 +271,6 @@ const DisplayScreen = ({ sessionId }) => {
                 <div style={{ position: 'absolute', width: '60vw', height: '60vw', bottom: '-15%', right: '-5%', borderRadius: '50%', background: 'radial-gradient(circle,rgba(120,60,200,.05) 0%,transparent 65%)', animation: 'dsOrb2 26s ease-in-out infinite alternate-reverse' }} />
                 <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.016) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.016) 1px,transparent 1px)', backgroundSize: '80px 80px' }} />
             </div>
-            {/* Scan line */}
             <div style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg,transparent,rgba(140,140,255,.11),transparent)', animation: 'dsScan 10s linear infinite' }} />
             </div>
@@ -165,11 +284,32 @@ const DisplayScreen = ({ sessionId }) => {
                     <Lock size={13} /> Room locked — click to unlock
                 </button>
             )}
+
             {sessionData?.connectedUsers?.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(14,14,18,.85)', border: '1px solid rgba(255,255,255,.07)', padding: '10px 20px', borderRadius: 100, backdropFilter: 'blur(20px)', animation: 'dsFadeUp .4s .1s ease both' }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', animation: 'dsPulse 2s ease-in-out infinite' }} />
-                    <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,.4)' }}>Remotes</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{sessionData.connectedUsers.length}</span>
+                <div className="ds-roster-wrap" style={{ animation: 'dsFadeUp .4s .1s ease both' }}>
+
+                    <div className="ds-roster-pill">
+                        <div className="ds-roster-dot" />
+                        <div className="ds-roster-text">
+                            <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,.4)' }}>Remotes</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{sessionData.connectedUsers.length}</span>
+                        </div>
+                    </div>
+
+                    <div className="ds-roster-dropdown-wrap">
+                        <div className="ds-roster-dropdown">
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.3)', letterSpacing: '.15em', textTransform: 'uppercase', padding: '4px 8px 8px' }}>Connected Devices</span>
+                            {sessionData.connectedUsers.map((user, i) => (
+                                <div key={i} className="ds-roster-item">
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{user}</span>
+                                    <button onClick={() => kickUser(user)} className="ds-kick-btn" title="Kick user">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                 </div>
             )}
         </div>
@@ -177,7 +317,6 @@ const DisplayScreen = ({ sessionId }) => {
 
     const letters = 'SlideBridge'.split('');
 
-    // ── Idle / QR ─────────────────────────────────────────────────────────────
     if (!sessionData?.activeFile) {
         return (
             <div className="sb-display" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#080808', color: '#fff', position: 'relative', overflow: 'hidden' }}>
@@ -186,12 +325,10 @@ const DisplayScreen = ({ sessionId }) => {
                 <Roster />
 
                 <div style={{ zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    {/* Tagline */}
                     <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,.25)', marginBottom: 44, animation: 'dsTagline 1s cubic-bezier(.16,1,.3,1) .8s both' }}>
                         Wireless Presentation System
                     </p>
 
-                    {/* Wordmark letter-drop */}
                     <h1 style={{ fontFamily: "'Poppins', sans-serif", fontSize: 'clamp(52px,8vw,92px)', fontWeight: 800, fontStyle: 'italic', letterSpacing: '-.04em', color: '#fff', marginBottom: 8, display: 'flex', alignItems: 'baseline' }}>
                         {letters.map((l, i) => (
                             <span key={i} style={{ display: 'inline-block', animation: `dsLetterDrop .55s cubic-bezier(.16,1,.3,1) ${i * .045}s both` }}>{l}</span>
@@ -199,7 +336,6 @@ const DisplayScreen = ({ sessionId }) => {
                         <span style={{ display: 'inline-block', color: 'rgba(255,255,255,.2)', animation: `dsLetterDrop .55s cubic-bezier(.16,1,.3,1) ${letters.length * .045}s both` }}>.</span>
                     </h1>
 
-                    {/* QR block */}
                     <div style={{ position: 'relative', animation: 'dsQrFloat 6s ease-in-out infinite', zIndex: 1 }}>
                         <BreathingRings />
                         <div style={{
@@ -210,7 +346,6 @@ const DisplayScreen = ({ sessionId }) => {
                             animation: 'dsFadeUp .8s cubic-bezier(.16,1,.3,1) .55s both',
                             transition: 'all .5s',
                         }}>
-                            {/* Animated corners */}
                             {[['tl', '2px 0 0 2px', '8px 0 0 0'], ['tr', '2px 2px 0 0', '0 8px 0 0'], ['bl', '0 0 2px 2px', '0 0 0 8px'], ['br', '0 2px 2px 0', '0 0 8px 0']].map(([k, bw, br], i) => (
                                 <div key={k} style={{
                                     position: 'absolute', width: 22, height: 22,
@@ -226,12 +361,10 @@ const DisplayScreen = ({ sessionId }) => {
                         </div>
                     </div>
 
-                    {/* Scan label */}
                     <p style={{ marginTop: 32, fontSize: 15, fontWeight: 400, color: 'rgba(255,255,255,.35)', letterSpacing: '.03em', animation: 'dsFadeUp .7s cubic-bezier(.16,1,.3,1) 1.2s both' }}>
                         {sessionData?.isLocked ? 'Room is currently locked' : 'Scan with your phone to take control'}
                     </p>
 
-                    {/* Room code pill */}
                     <div style={{ marginTop: 20, display: 'inline-flex', alignItems: 'center', gap: 14, background: 'rgba(12,12,16,.8)', border: '1px solid rgba(255,255,255,.06)', padding: '14px 28px', borderRadius: 100, backdropFilter: 'blur(20px)', animation: 'dsFadeUp .7s cubic-bezier(.16,1,.3,1) 1.4s both' }}>
                         {sessionData?.isLocked ? (
                             <><Lock size={14} style={{ color: 'rgba(255,255,255,.2)' }} /><span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.22)', letterSpacing: '.2em', textTransform: 'uppercase' }}>Locked</span></>
@@ -246,18 +379,18 @@ const DisplayScreen = ({ sessionId }) => {
                         )}
                     </div>
 
-                    {/* Blinking dots */}
                     <div style={{ display: 'flex', gap: 6, marginTop: 44, animation: 'dsFadeUp .7s cubic-bezier(.16,1,.3,1) 1.6s both' }}>
                         {[0, 1, 2].map(i => (
                             <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,.15)', animation: `dsDotBlink 2s ease-in-out ${i * .35}s infinite` }} />
                         ))}
                     </div>
                 </div>
+
+                <CreditPill />
             </div>
         );
     }
 
-    // ── Active presentation ────────────────────────────────────────────────────
     return (
         <div className="sb-display" style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: '#080808' }}>
             <style>{css}</style>
@@ -265,7 +398,6 @@ const DisplayScreen = ({ sessionId }) => {
             <ParticleField />
             <Roster />
 
-            {/* File-change flash */}
             {fileTransition && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 100, pointerEvents: 'none', background: 'rgba(180,180,255,.06)', animation: 'dsFlash .7s ease forwards' }} />
             )}
@@ -308,12 +440,13 @@ const DisplayScreen = ({ sessionId }) => {
                 )}
             </div>
 
-            {/* Page counter — re-mounts on change to trigger pop animation */}
             <div key={`${sessionData.activePage}-${sessionData.totalPages}`} style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 50, background: 'rgba(10,10,14,.8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 100, padding: '8px 20px', backdropFilter: 'blur(20px)', animation: 'dsCounterPop .35s cubic-bezier(.16,1,.3,1) both' }}>
                 <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,.4)', letterSpacing: '.05em' }}>
                     {sessionData.activePage || 1}<span style={{ color: 'rgba(255,255,255,.15)' }}> / {sessionData.totalPages || '—'}</span>
                 </span>
             </div>
+
+            <CreditPill />
         </div>
     );
 };
