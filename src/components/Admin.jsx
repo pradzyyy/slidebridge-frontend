@@ -2,95 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from "firebase/firestore";
 import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle } from 'lucide-react';
-
-const CreditPill = () => (
-    <div className="sb-pill-wrap" style={{
-        position: 'fixed',
-        bottom: '32px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 99999,
-        display: 'inline-block',
-        borderRadius: '100px',
-        padding: '1.5px',
-        background: 'conic-gradient(from var(--sb-angle, 0deg), #000000 0%, #ffffff 25%, #888888 50%, #ffffff 75%, #000000 100%)',
-        animation: 'sbSpinBW 3s linear infinite',
-    }}>
-        <a
-            href="https://www.linkedin.com/in/pradyumnpandhurnekar/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="sb-pill-inner"
-            style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                background: '#0a0a0a',
-                borderRadius: '100px',
-                padding: '10px 14px',
-                textDecoration: 'none',
-                cursor: 'pointer',
-                overflow: 'hidden',
-                gap: 0,
-                transition: 'padding 0.4s cubic-bezier(0.16,1,0.3,1)',
-            }}
-        >
-            <span style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '15px',
-                fontStyle: 'italic',
-                fontWeight: 700,
-                color: 'white',
-                letterSpacing: '-0.02em',
-                lineHeight: 1,
-                paddingBottom: '1px',
-                flexShrink: 0,
-            }}>/p</span>
-            <div className="sb-pill-divider" style={{
-                width: 0,
-                height: '14px',
-                background: 'rgba(255,255,255,0.15)',
-                flexShrink: 0,
-                transition: 'width 0.4s cubic-bezier(0.16,1,0.3,1), margin 0.4s cubic-bezier(0.16,1,0.3,1)',
-            }} />
-            <span className="sb-pill-text" style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.45)',
-                letterSpacing: '0.13em',
-                textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
-                maxWidth: 0,
-                overflow: 'hidden',
-                opacity: 0,
-                transition: 'max-width 0.45s cubic-bezier(0.16,1,0.3,1), opacity 0.3s, padding 0.4s cubic-bezier(0.16,1,0.3,1)',
-            }}>
-                built by <span style={{ color: 'rgba(255,255,255,0.85)' }}>pradzyyy</span>
-            </span>
-        </a>
-    </div>
-);
+import { CreditPill } from '../App';
 
 const adminCss = `
-    @property --sb-angle {
-      syntax: '<angle>';
-      initial-value: 0deg;
-      inherits: false;
-    }
-    @keyframes sbSpinBW {
-      to { --sb-angle: 360deg; }
-    }
-    .sb-pill-wrap:hover .sb-pill-text {
-      max-width: 160px;
-      opacity: 1;
-    }
-    .sb-pill-wrap:hover .sb-pill-divider {
-      width: 1px;
-      margin: 0 10px;
-    }
-    .sb-pill-wrap:hover .sb-pill-inner {
-      padding: 10px 22px;
-    }
-
     @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
     @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
     @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -98,13 +12,10 @@ const adminCss = `
     @keyframes adBtnIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes adGlowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)} 50%{box-shadow:0 0 40px 4px rgba(99,102,241,0.09)} }
     @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes adCardIn    { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-    @keyframes adStatIn    { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
     @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
     @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
     @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
     @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
-    @keyframes adCodeIn    { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
     @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
 
     .ad-input:focus { outline: none; border-color: rgba(99,102,241,0.5) !important; }
@@ -267,7 +178,7 @@ const Admin = () => {
                     </form>
                 </div>
 
-                <CreditPill />
+                <CreditPill position="bottom-center" />
             </div>
         );
     }
@@ -362,7 +273,9 @@ const Admin = () => {
                 </div>
 
             ) : activeSessions.length === 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'adEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}>
+                <div
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '128px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '32px', background: '#0a0a0a', animation: 'adEmptyIn .6s cubic-bezier(.16,1,.3,1) .2s both' }}
+                >
                     <ServerCrash size={64} color="#737373" style={{ marginBottom: '24px' }} />
                     <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#737373', margin: '0 0 8px 0' }}>No Active Rooms</h2>
                     <p style={{ fontSize: '14px', color: '#525252', margin: 0 }}>All SlideBridge servers are currently idle.</p>
@@ -370,14 +283,14 @@ const Admin = () => {
 
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', width: '100%', paddingBottom: '100px' }}>
-                    {activeSessions.map((session, idx) => (
+                    {activeSessions.map((session) => (
                         <div
                             key={session.id}
                             className="ad-card"
-                            style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', animation: `adCardIn .5s cubic-bezier(.16,1,.3,1) ${0.1 + idx * 0.07}s backwards` }}
+                            style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                                <div style={{ animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.22 + idx * 0.07}s backwards` }}>
+                                <div>
                                     <span style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '4px', display: 'block' }}>Room Code</span>
                                     <h3 style={{ fontSize: '30px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em', margin: 0 }}>{session.id}</h3>
                                 </div>
@@ -385,7 +298,7 @@ const Admin = () => {
                                     onClick={() => toggleRoomLock(session.id, session.isLocked)}
                                     title={session.isLocked ? "Click to Unlock Room" : "Click to Lock Room"}
                                     className="ad-lock-btn"
-                                    style={{ padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${session.isLocked ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`, background: session.isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: session.isLocked ? '#ef4444' : '#22c55e', animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.28 + idx * 0.07}s backwards` }}
+                                    style={{ padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${session.isLocked ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`, background: session.isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: session.isLocked ? '#ef4444' : '#22c55e' }}
                                 >
                                     {session.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
                                     <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{session.isLocked ? 'Locked' : 'Open'}</span>
@@ -394,12 +307,12 @@ const Admin = () => {
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
                                 {[
-                                    { icon: <Users size={16} />, label: 'Remotes', value: session.connectedUsers?.length || 0, delay: 0.32 + idx * 0.07 },
-                                    { icon: <FileText size={16} />, label: 'Files Hosted', value: session.files?.length || 0, delay: 0.38 + idx * 0.07 },
-                                ].map(({ icon, label, value, delay }) => (
+                                    { icon: <Users size={16} />, label: 'Remotes', value: session.connectedUsers?.length || 0 },
+                                    { icon: <FileText size={16} />, label: 'Files Hosted', value: session.files?.length || 0 },
+                                ].map(({ icon, label, value }) => (
                                     <div
                                         key={label}
-                                        style={{ background: '#0a0a0a', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.05)', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${delay}s backwards` }}
+                                        style={{ background: '#0a0a0a', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.05)' }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#a3a3a3' }}>
                                             {icon}
@@ -410,7 +323,7 @@ const Admin = () => {
                                 ))}
 
                                 {session.connectedUsers?.length > 0 && (
-                                    <div style={{ marginTop: '8px', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.44 + idx * 0.07}s backwards` }}>
+                                    <div style={{ marginTop: '8px' }}>
                                         <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Connected Users:</span>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                             {session.connectedUsers.map((user, i) => (
@@ -421,7 +334,7 @@ const Admin = () => {
                                 )}
 
                                 {session.files?.length > 0 && (
-                                    <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.5 + idx * 0.07}s backwards` }}>
+                                    <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
                                         <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Hosted Files:</span>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '128px', overflowY: 'auto' }}>
                                             {session.files.map((file, i) => (
@@ -445,7 +358,7 @@ const Admin = () => {
                             <button
                                 onClick={() => setRoomToDestroy(session)}
                                 className="ad-terminate-btn"
-                                style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700, padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em', animation: `adBtnIn .4s cubic-bezier(.16,1,.3,1) ${0.56 + idx * 0.07}s backwards` }}
+                                style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700, padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                             >
                                 <Trash2 size={16} />
                                 Force Terminate
@@ -455,7 +368,7 @@ const Admin = () => {
                 </div>
             )}
 
-            <CreditPill />
+            <CreditPill position="bottom-center" />
         </div>
     );
 };
