@@ -6,7 +6,6 @@ import { MonitorPlay, Loader2, KeyRound, Lock, Unlock, Users, X } from "lucide-r
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { CreditPill } from '../App';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -63,6 +62,49 @@ const BreathingRings = () => (
         ))}
     </div>
 );
+
+// ── THE NEW MINIMAL TEXT CREDIT ──
+const MinimalCredit = () => {
+    const [isHovered, setIsHovered] = useState(false);
+    return (
+        <a
+            href="https://www.linkedin.com/in/pradyumnpandhurnekar/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            style={{
+                position: 'absolute',
+                bottom: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: isHovered ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.15)',
+                textDecoration: 'none',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.3s ease',
+                zIndex: 100,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+            }}
+        >
+            <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '13px',
+                fontStyle: 'italic',
+                fontWeight: 700,
+                color: isHovered ? 'rgba(140,140,255,0.8)' : 'rgba(140,140,255,0.3)',
+                textTransform: 'none',
+                transition: 'color 0.3s ease'
+            }}>/p</span>
+            <span style={{ marginTop: '1px' }}>built by pradzyyy</span>
+        </a>
+    );
+};
 
 const DisplayScreen = ({ sessionId }) => {
     const [sessionData, setSessionData] = useState(null);
@@ -151,7 +193,6 @@ const DisplayScreen = ({ sessionId }) => {
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
 
-        /* --- THE STEALTH ROSTER CSS --- */
         .ds-roster-wrap {
             position: relative;
             display: flex;
@@ -167,7 +208,7 @@ const DisplayScreen = ({ sessionId }) => {
             border-radius: 100px;
             backdrop-filter: blur(20px);
             height: 36px;
-            padding: 0 14px; /* Tight padding to look like a circle initially */
+            padding: 0 14px;
             gap: 0;
             transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
             position: relative;
@@ -177,7 +218,7 @@ const DisplayScreen = ({ sessionId }) => {
             background: rgba(30,30,40,0.95);
             border-color: rgba(255,255,255,0.15);
             padding: 0 20px;
-            gap: 10px; /* Opens up the gap to reveal text */
+            gap: 10px; 
         }
         .ds-roster-dot {
             width: 8px;
@@ -201,7 +242,7 @@ const DisplayScreen = ({ sessionId }) => {
             max-width: 120px;
             opacity: 1;
         }
-        /* The invisible bridge that fixes the hover gap bug */
+        
         .ds-roster-dropdown-wrap {
             position: absolute;
             top: 100%;
@@ -386,7 +427,7 @@ const DisplayScreen = ({ sessionId }) => {
                     </div>
                 </div>
 
-                <CreditPill />
+                <MinimalCredit />
             </div>
         );
     }
@@ -446,7 +487,7 @@ const DisplayScreen = ({ sessionId }) => {
                 </span>
             </div>
 
-            <CreditPill />
+            <MinimalCredit />
         </div>
     );
 };
