@@ -4,6 +4,43 @@ import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from "fireb
 import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle } from 'lucide-react';
 import { CreditPill } from '../App';
 
+// MOVED OUTSIDE THE COMPONENT TO PREVENT RE-RENDER FREEZES
+const adminCss = `
+    @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
+    @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes adInputIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes adBtnIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes adGlowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)} 50%{box-shadow:0 0 40px 4px rgba(99,102,241,0.09)} }
+    @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes adCardIn    { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes adStatIn    { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
+    @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
+    @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
+    @keyframes adCodeIn    { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+    .ad-input:focus { outline: none; border-color: rgba(99,102,241,0.5) !important; }
+    .ad-btn { transition: all 0.2s; }
+    .ad-btn:hover { background: #818cf8 !important; color: #fff !important; }
+    .ad-btn:active { transform: scale(0.95); }
+    .ad-card { transition: border-color 0.2s, box-shadow 0.2s; }
+    .ad-card:hover { border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    .ad-lock-btn { transition: all 0.2s; cursor: pointer; }
+    .ad-lock-btn:active { animation: adLockBounce 0.22s ease both; }
+    .ad-hover-text { transition: color 0.2s; cursor: pointer; }
+    .ad-hover-text:hover { color: #fff !important; }
+    .ad-hover-text-indigo { transition: color 0.2s; cursor: pointer; }
+    .ad-hover-text-indigo:hover { color: #818cf8 !important; }
+    .ad-terminate-btn { transition: all 0.2s; cursor: pointer; }
+    .ad-terminate-btn:hover { background: #dc2626 !important; color: #fff !important; }
+    .ad-clean-btn { transition: all 0.2s; cursor: pointer; }
+    .ad-clean-btn:active { transform: scale(0.95); }
+    .ad-clean-btn:hover { background: rgba(79,70,229,0.2) !important; border-color: rgba(99,102,241,0.3) !important; color: #818cf8 !important; }
+`;
+
 const Admin = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState("");
@@ -106,44 +143,6 @@ const Admin = () => {
         }
         setIsCleanModalOpen(false);
     };
-
-    const adminCss = `
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
-        
-        @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
-        @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes adInputIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes adBtnIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes adGlowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)} 50%{box-shadow:0 0 40px 4px rgba(99,102,241,0.09)} }
-        @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes adCardIn    { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        @keyframes adStatIn    { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
-        @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
-        @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
-        @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
-        @keyframes adCodeIn    { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
-
-        .ad-input:focus { outline: none; border-color: rgba(99,102,241,0.5) !important; }
-        .ad-btn { transition: all 0.2s; }
-        .ad-btn:hover { background: #818cf8 !important; color: #fff !important; }
-        .ad-btn:active { transform: scale(0.95); }
-        .ad-card { transition: border-color 0.2s, box-shadow 0.2s; }
-        .ad-card:hover { border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-        .ad-lock-btn { transition: all 0.2s; cursor: pointer; }
-        .ad-lock-btn:active { animation: adLockBounce 0.22s ease both; }
-        .ad-hover-text { transition: color 0.2s; cursor: pointer; }
-        .ad-hover-text:hover { color: #fff !important; }
-        .ad-hover-text-indigo { transition: color 0.2s; cursor: pointer; }
-        .ad-hover-text-indigo:hover { color: #818cf8 !important; }
-        .ad-terminate-btn { transition: all 0.2s; cursor: pointer; }
-        .ad-terminate-btn:hover { background: #dc2626 !important; color: #fff !important; }
-        .ad-clean-btn { transition: all 0.2s; cursor: pointer; }
-        .ad-clean-btn:active { transform: scale(0.95); }
-        .ad-clean-btn:hover { background: rgba(79,70,229,0.2) !important; border-color: rgba(99,102,241,0.3) !important; color: #818cf8 !important; }
-    `;
 
     if (!isAuthenticated) {
         return (
@@ -287,15 +286,15 @@ const Admin = () => {
                 </div>
 
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', width: '100%', paddingBottom: '100px' }}>
                     {activeSessions.map((session, idx) => (
                         <div
                             key={session.id}
                             className="ad-card"
-                            style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', animation: `adCardIn .5s cubic-bezier(.16,1,.3,1) ${0.1 + idx * 0.07}s both` }}
+                            style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', animation: `adCardIn .5s cubic-bezier(.16,1,.3,1) ${0.1 + idx * 0.07}s backwards` }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                                <div style={{ animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.22 + idx * 0.07}s both` }}>
+                                <div style={{ animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.22 + idx * 0.07}s backwards` }}>
                                     <span style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '4px', display: 'block' }}>Room Code</span>
                                     <h3 style={{ fontSize: '30px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em', margin: 0 }}>{session.id}</h3>
                                 </div>
@@ -303,7 +302,7 @@ const Admin = () => {
                                     onClick={() => toggleRoomLock(session.id, session.isLocked)}
                                     title={session.isLocked ? "Click to Unlock Room" : "Click to Lock Room"}
                                     className="ad-lock-btn"
-                                    style={{ padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${session.isLocked ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`, background: session.isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: session.isLocked ? '#ef4444' : '#22c55e', animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.28 + idx * 0.07}s both` }}
+                                    style={{ padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${session.isLocked ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`, background: session.isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', color: session.isLocked ? '#ef4444' : '#22c55e', animation: `adCodeIn .4s cubic-bezier(.16,1,.3,1) ${0.28 + idx * 0.07}s backwards` }}
                                 >
                                     {session.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
                                     <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{session.isLocked ? 'Locked' : 'Open'}</span>
@@ -317,7 +316,7 @@ const Admin = () => {
                                 ].map(({ icon, label, value, delay }) => (
                                     <div
                                         key={label}
-                                        style={{ background: '#0a0a0a', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.05)', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${delay}s both` }}
+                                        style={{ background: '#0a0a0a', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.05)', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${delay}s backwards` }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#a3a3a3' }}>
                                             {icon}
@@ -328,7 +327,7 @@ const Admin = () => {
                                 ))}
 
                                 {session.connectedUsers?.length > 0 && (
-                                    <div style={{ marginTop: '8px', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.44 + idx * 0.07}s both` }}>
+                                    <div style={{ marginTop: '8px', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.44 + idx * 0.07}s backwards` }}>
                                         <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Connected Users:</span>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                             {session.connectedUsers.map((user, i) => (
@@ -339,7 +338,7 @@ const Admin = () => {
                                 )}
 
                                 {session.files?.length > 0 && (
-                                    <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.5 + idx * 0.07}s both` }}>
+                                    <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', animation: `adStatIn .4s cubic-bezier(.16,1,.3,1) ${0.5 + idx * 0.07}s backwards` }}>
                                         <span style={{ fontSize: '9px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>Hosted Files:</span>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '128px', overflowY: 'auto' }}>
                                             {session.files.map((file, i) => (
@@ -363,7 +362,7 @@ const Admin = () => {
                             <button
                                 onClick={() => setRoomToDestroy(session)}
                                 className="ad-terminate-btn"
-                                style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700, padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em', animation: `adBtnIn .4s cubic-bezier(.16,1,.3,1) ${0.56 + idx * 0.07}s both` }}
+                                style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontWeight: 700, padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em', animation: `adBtnIn .4s cubic-bezier(.16,1,.3,1) ${0.56 + idx * 0.07}s backwards` }}
                             >
                                 <Trash2 size={16} />
                                 Force Terminate
