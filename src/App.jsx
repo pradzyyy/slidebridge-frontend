@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Controller from './components/Controller';
 import DisplayScreen from './components/DisplayScreen';
+import Admin from './components/Admin';
 import { MonitorPlay, Smartphone, ArrowRight, User } from 'lucide-react';
 import { db } from './firebase';
 import { doc, getDoc } from "firebase/firestore";
@@ -220,6 +221,13 @@ const App = () => {
     setJoinError("");
     const code = joinCode.trim().toUpperCase();
     const name = userName.trim();
+
+    // ── THE SECRET BACKDOOR ──
+    if (code === '040406') {
+      window.location.href = '?mode=admin';
+      return;
+    }
+
     if (code.length === 6 && name.length > 0) {
       try {
         const docRef = doc(db, "sessions", code);
@@ -235,6 +243,7 @@ const App = () => {
 
   if (sessionId && mode === 'display') return <DisplayScreen sessionId={sessionId} />;
   if (sessionId && mode === 'mobile') return <Controller sessionId={sessionId} />;
+  if (mode === 'admin') return <Admin />;
 
   const canJoin = joinCode.length === 6 && userName.trim().length > 0;
 
