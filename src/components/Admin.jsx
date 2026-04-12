@@ -4,39 +4,6 @@ import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from "fireb
 import { ShieldAlert, Trash2, Users, FileText, Lock, Unlock, Activity, ServerCrash, ExternalLink, AlertTriangle } from 'lucide-react';
 import { CreditPill } from '../App';
 
-const adminCss = `
-    @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-    @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
-    @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes adInputIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
-    @keyframes adBtnIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes adGlowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)} 50%{box-shadow:0 0 40px 4px rgba(99,102,241,0.09)} }
-    @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
-    @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
-    @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
-    @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
-    @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
-
-    .ad-input:focus { outline: none; border-color: rgba(99,102,241,0.5) !important; }
-    .ad-btn { transition: all 0.2s; }
-    .ad-btn:hover { background: #818cf8 !important; color: #fff !important; }
-    .ad-btn:active { transform: scale(0.95); }
-    .ad-card { transition: border-color 0.2s, box-shadow 0.2s; }
-    .ad-card:hover { border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-    .ad-lock-btn { transition: all 0.2s; cursor: pointer; }
-    .ad-lock-btn:active { animation: adLockBounce 0.22s ease both; }
-    .ad-hover-text { transition: color 0.2s; cursor: pointer; }
-    .ad-hover-text:hover { color: #fff !important; }
-    .ad-hover-text-indigo { transition: color 0.2s; cursor: pointer; }
-    .ad-hover-text-indigo:hover { color: #818cf8 !important; }
-    .ad-terminate-btn { transition: all 0.2s; cursor: pointer; }
-    .ad-terminate-btn:hover { background: #dc2626 !important; color: #fff !important; }
-    .ad-clean-btn { transition: all 0.2s; cursor: pointer; }
-    .ad-clean-btn:active { transform: scale(0.95); }
-    .ad-clean-btn:hover { background: rgba(79,70,229,0.2) !important; border-color: rgba(99,102,241,0.3) !important; color: #818cf8 !important; }
-`;
-
 const Admin = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState("");
@@ -143,7 +110,19 @@ const Admin = () => {
     if (!isAuthenticated) {
         return (
             <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'DM Sans', sans-serif" }}>
-                <style>{adminCss}</style>
+                <style>{`
+                    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+                    @keyframes adLoginIn  { from{opacity:0;transform:translateY(28px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+                    @keyframes adIconSpin { 0%{transform:rotate(-8deg) scale(.9);opacity:0} 100%{transform:rotate(0deg) scale(1);opacity:1} }
+                    @keyframes adTitleIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+                    @keyframes adInputIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+                    @keyframes adBtnIn    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+                    @keyframes adGlowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)} 50%{box-shadow:0 0 40px 4px rgba(99,102,241,0.09)} }
+                    .ad-input:focus { outline: none; border-color: rgba(99,102,241,0.5) !important; }
+                    .ad-btn { transition: all 0.2s; }
+                    .ad-btn:hover { background: #818cf8 !important; color: #fff !important; }
+                    .ad-btn:active { transform: scale(0.95); }
+                `}</style>
                 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(49,46,129,0.1) 0%, #050505 70%, #050505 100%)', pointerEvents: 'none' }} />
 
                 <div style={{ zIndex: 10, width: '100%', maxWidth: '380px', background: '#111', border: '1px solid rgba(255,255,255,0.05)', padding: '40px', borderRadius: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', animation: 'adLoginIn .6s cubic-bezier(.16,1,.3,1) .1s both, adGlowPulse 5s ease-in-out 1s infinite' }}>
@@ -187,7 +166,29 @@ const Admin = () => {
 
     return (
         <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '32px', fontFamily: "'DM Sans', sans-serif" }}>
-            <style>{adminCss}</style>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+                @keyframes adHeaderIn  { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes adEmptyIn   { from{opacity:0;transform:scale(.96)} to{opacity:.3;transform:scale(1)} }
+                @keyframes adPulse     { 0%,100%{opacity:1} 50%{opacity:.3} }
+                @keyframes adModalIn   { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+                @keyframes adFadeIn    { from{opacity:0} to{opacity:1} }
+                @keyframes adLockBounce { 0%{transform:scale(1)} 40%{transform:scale(.85)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+                .sb-admin-card { transition: border-color 0.2s, box-shadow 0.2s; }
+                .sb-admin-card:hover { border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+                .ad-lock-btn { transition: all 0.2s; cursor: pointer; }
+                .ad-lock-btn:active { animation: adLockBounce 0.22s ease both; }
+                .ad-hover-text { transition: color 0.2s; cursor: pointer; }
+                .ad-hover-text:hover { color: #fff !important; }
+                .ad-hover-text-indigo { transition: color 0.2s; cursor: pointer; }
+                .ad-hover-text-indigo:hover { color: #818cf8 !important; }
+                .ad-terminate-btn { transition: all 0.2s; cursor: pointer; }
+                .ad-terminate-btn:hover { background: #dc2626 !important; color: #fff !important; }
+                .ad-clean-btn { transition: all 0.2s; cursor: pointer; }
+                .ad-clean-btn:active { transform: scale(0.95); }
+                .ad-clean-btn:hover { background: rgba(79,70,229,0.2) !important; border-color: rgba(99,102,241,0.3) !important; color: #818cf8 !important; }
+            `}</style>
 
             {roomToDestroy && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', animation: 'adFadeIn .2s ease both' }}>
@@ -286,7 +287,7 @@ const Admin = () => {
                     {activeSessions.map((session) => (
                         <div
                             key={session.id}
-                            className="ad-card"
+                            className="sb-admin-card"
                             style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>

@@ -381,9 +381,8 @@ const App = () => {
   const [btnHover, setBtnHover] = useState(false);
   const [isMaintenance, setIsMaintenance] = useState(false);
 
-  // SCANNER STATE
   const [isScanning, setIsScanning] = useState(false);
-  const [scanSuccess, setScanSuccess] = useState(false); // NEW POPUP STATE
+  const [scanSuccess, setScanSuccess] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -403,7 +402,6 @@ const App = () => {
     return () => unsubSettings();
   }, []);
 
-  // SCANNER LOGIC
   useEffect(() => {
     if (!isScanning) return;
     let stream = null;
@@ -726,7 +724,6 @@ const App = () => {
         }
       `}</style>
 
-      {/* SUCCESS TOAST POPUP */}
       {scanSuccess && (
         <div style={{
           position: 'fixed',
@@ -752,7 +749,6 @@ const App = () => {
         </div>
       )}
 
-      {/* SCANNER MODAL OVERLAY */}
       {isScanning && (
         <div style={{
           position: 'fixed',
@@ -966,7 +962,7 @@ const App = () => {
           animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.85s both'
         }}>
 
-          <button className="mobile-only sb-qr-btn" onClick={(e) => { e.preventDefault(); setIsScanning(true); }}>
+          <button type="button" className="mobile-only sb-qr-btn" onClick={(e) => { setIsScanning(true); }}>
             <QrCode size={18} />
             <span>Scan Room QR</span>
           </button>
