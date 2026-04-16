@@ -222,11 +222,9 @@ const Controller = ({ sessionId }) => {
     // --- TOUCH GESTURE LOGIC ---
     const handleTouchStart = (e) => {
         if (e.touches.length === 1) {
-            // One finger swipe setup
             setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
             setTouchEnd(null);
         } else if (e.touches.length === 2) {
-            // Two finger pinch setup
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
             setInitialPinchDist(Math.hypot(dx, dy));
@@ -237,49 +235,43 @@ const Controller = ({ sessionId }) => {
         if (e.touches.length === 1) {
             setTouchEnd({ x: e.touches[0].clientX, y: e.touches[0].clientY });
         } else if (e.touches.length === 2 && initialPinchDist) {
-            // Two finger pinch movement
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
             const currentDist = Math.hypot(dx, dy);
 
-            // Need 50px of movement to trigger a zoom step so it isn't too jittery
             if (currentDist - initialPinchDist > 50) {
-                changeZoom(0.5); // Zoom In
-                setInitialPinchDist(currentDist); // Reset to prevent rapid firing
+                changeZoom(0.5);
+                setInitialPinchDist(currentDist);
             } else if (initialPinchDist - currentDist > 50) {
-                changeZoom(-0.5); // Zoom Out
+                changeZoom(-0.5);
                 setInitialPinchDist(currentDist);
             }
         }
     };
 
     const handleTouchEnd = () => {
-        setInitialPinchDist(null); // Always reset pinch on lift
+        setInitialPinchDist(null);
 
         if (!touchStart || !touchEnd || !session?.activeFile) return;
 
         const dx = touchStart.x - touchEnd.x;
         const dy = touchStart.y - touchEnd.y;
-        const minSwipeDistance = 50; // Threshold
+        const minSwipeDistance = 50;
 
-        // Determine if movement was primarily horizontal or vertical
         if (Math.abs(dx) > Math.abs(dy)) {
-            // Horizontal Swipes (Left/Right)
-            if (dx > minSwipeDistance) changePage(1);   // Swiped Left -> Next
-            if (dx < -minSwipeDistance) changePage(-1); // Swiped Right -> Prev
+            if (dx > minSwipeDistance) changePage(1);
+            if (dx < -minSwipeDistance) changePage(-1);
         } else {
-            // Vertical Swipes (Up/Down)
-            if (dy > minSwipeDistance) changePage(1);   // Swiped Up -> Next
-            if (dy < -minSwipeDistance) changePage(-1); // Swiped Down -> Prev
+            if (dy > minSwipeDistance) changePage(1);
+            if (dy < -minSwipeDistance) changePage(-1);
         }
 
-        // Reset
         setTouchStart(null);
         setTouchEnd(null);
     };
 
-
     const css = `
+        body { overscroll-behavior-y: contain; }
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500;700&family=Poppins:ital,wght@0,400;0,700;0,800;1,700;1,800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         @keyframes ctFadeUp    { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
@@ -415,14 +407,8 @@ const Controller = ({ sessionId }) => {
         </div>
     );
 
-    // --- ATTACHED GESTURE LISTENERS TO MAIN WRAPPER ---
     return (
-        <div
-            style={{ minHeight: '100vh', background: '#080808', color: '#fff', fontFamily: "'DM Sans',sans-serif", overflowX: 'hidden', paddingBottom: 140 }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-        >
+        <div style={{ minHeight: '100vh', background: '#080808', color: '#fff', fontFamily: "'DM Sans',sans-serif", overflowX: 'hidden', paddingBottom: 140 }}>
             <style>{css}</style>
 
             <Modal show={isEndingSession} icon={<Power size={26} color="#e05555" />} iconColor="200,50,50" title="End presentation?" body="This destroys the room and disconnects all remotes and displays immediately." onCancel={() => setIsEndingSession(false)} onConfirm={confirmEndSession} confirmLabel="End session" />
@@ -514,6 +500,9 @@ const Controller = ({ sessionId }) => {
 
                 {session?.activeFile && (
                     <div
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
                         style={{
                             margin: '20px 20px 0', borderRadius: 20, overflow: 'hidden',
                             border: '1px solid rgba(255,255,255,.06)', background: '#0a0a0f',
@@ -527,6 +516,7 @@ const Controller = ({ sessionId }) => {
                             animationDelay: '0s, .6s',
                             animationIterationCount: '1, infinite',
                             animationFillMode: 'both, none',
+                            touchAction: 'none'
                         }}
                         key={session.activeFile.url}
                     >
