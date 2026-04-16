@@ -610,11 +610,9 @@ const App = () => {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
       fontFamily: "'DM Sans', sans-serif",
       color: '#fff',
-      overflow: 'hidden',
+      overflowX: 'hidden',
       position: 'relative',
     }}>
       <style>{`
@@ -859,244 +857,288 @@ const App = () => {
       <ScanLine />
 
       <div style={{
-        position: 'relative',
-        zIndex: 10,
+        minHeight: '100vh',
         width: '100%',
-        maxWidth: '420px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? 'none' : 'translateY(16px)',
-        transition: 'opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)',
+        justifyContent: 'center',
+        padding: '24px',
+        boxSizing: 'border-box',
+        position: 'relative',
       }}>
-
-        <PulsingRing />
-        <AnimatedWordmark />
-
-        <p style={{
-          fontSize: '12px',
-          fontWeight: 500,
-          color: 'rgba(255,255,255,0.2)',
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          marginBottom: '48px',
-          animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.55s both',
-        }}>
-          Wireless presentation control
-        </p>
-
-        <button
-          onClick={createScreen}
-          onMouseEnter={() => setBtnHover(true)}
-          onMouseLeave={() => setBtnHover(false)}
-          className="sb-launch-btn"
-          style={{
-            width: '100%',
-            background: 'rgba(255,255,255,0.92)',
-            border: 'none',
-            borderRadius: '18px',
-            padding: '18px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            marginBottom: '28px',
-            position: 'relative',
-            overflow: 'hidden',
-            animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.65s both',
-          }}
-        >
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.6) 50%, transparent 60%)',
-            animation: btnHover ? 'shimmerSlide 0.6s ease forwards' : 'none',
-            pointerEvents: 'none',
-          }} />
-          <span style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            fontSize: '16px',
-            fontWeight: 600,
-            color: '#080808',
-            letterSpacing: '-0.01em'
-          }}>
-            <MonitorPlay size={20} color="#080808" /> Launch big screen
-          </span>
-          <ArrowRight
-            size={20}
-            color="#080808"
-            style={{
-              transition: 'transform 0.2s cubic-bezier(0.16,1,0.3,1)',
-              transform: btnHover ? 'translateX(4px)' : 'none'
-            }}
-          />
-        </button>
-
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
+          position: 'relative',
+          zIndex: 10,
           width: '100%',
-          marginBottom: '20px',
-          animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s both'
-        }}>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
-          <span style={{
-            fontSize: '10px',
-            fontWeight: 600,
-            color: 'rgba(255,255,255,0.18)',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase'
-          }}>or join a room</span>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
-        </div>
-
-        <form onSubmit={joinScreen} style={{
-          width: '100%',
+          maxWidth: '420px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
-          animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.85s both'
+          alignItems: 'center',
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'none' : 'translateY(16px)',
+          transition: 'opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)',
         }}>
 
-          <button type="button" className="mobile-only sb-qr-btn" onClick={(e) => { setIsScanning(true); }}>
-            <QrCode size={18} />
-            <span>Scan Room QR</span>
+          <PulsingRing />
+          <AnimatedWordmark />
+
+          <p style={{
+            fontSize: '12px',
+            fontWeight: 500,
+            color: 'rgba(255,255,255,0.2)',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            marginBottom: '48px',
+            animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.55s both',
+          }}>
+            Wireless presentation control
+          </p>
+
+          <button
+            onClick={createScreen}
+            onMouseEnter={() => setBtnHover(true)}
+            onMouseLeave={() => setBtnHover(false)}
+            className="sb-launch-btn"
+            style={{
+              width: '100%',
+              background: 'rgba(255,255,255,0.92)',
+              border: 'none',
+              borderRadius: '18px',
+              padding: '18px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              marginBottom: '28px',
+              position: 'relative',
+              overflow: 'hidden',
+              animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.65s both',
+            }}
+          >
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.6) 50%, transparent 60%)',
+              animation: btnHover ? 'shimmerSlide 0.6s ease forwards' : 'none',
+              pointerEvents: 'none',
+            }} />
+            <span style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              fontSize: '16px',
+              fontWeight: 600,
+              color: '#080808',
+              letterSpacing: '-0.01em'
+            }}>
+              <MonitorPlay size={20} color="#080808" /> Launch big screen
+            </span>
+            <ArrowRight
+              size={20}
+              color="#080808"
+              style={{
+                transition: 'transform 0.2s cubic-bezier(0.16,1,0.3,1)',
+                transform: btnHover ? 'translateX(4px)' : 'none'
+              }}
+            />
           </button>
 
-          <div style={{ position: 'relative' }}>
-            <div style={{
-              position: 'absolute',
-              left: '16px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none'
-            }}>
-              <User size={16} color="rgba(255,255,255,0.2)" />
-            </div>
-            <input
-              type="text"
-              placeholder="Your name"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              maxLength={15}
-              required
-              className="sb-input"
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '14px',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 500,
-                padding: '15px 16px 15px 42px',
-                fontFamily: "'DM Sans', sans-serif",
-                transition: 'border-color 0.2s, background 0.2s'
-              }}
-            />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            width: '100%',
+            marginBottom: '20px',
+            animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.75s both'
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
+            <span style={{
+              fontSize: '10px',
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.18)',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase'
+            }}>or join a room</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
           </div>
 
-          <div style={{ position: 'relative' }}>
-            <div style={{
-              position: 'absolute',
-              left: '16px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none'
-            }}>
-              <Smartphone size={16} color="rgba(255,255,255,0.2)" />
-            </div>
-            <input
-              type="text"
-              placeholder="6-digit room code"
-              value={joinCode}
-              onChange={(e) => { setJoinCode(e.target.value.toUpperCase()); setJoinError(""); }}
-              maxLength={6}
-              required
-              className="sb-input"
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: joinError ? 'rgba(200,50,50,0.06)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${joinError ? 'rgba(200,50,50,0.25)' : 'rgba(255,255,255,0.07)'}`,
-                borderRadius: '14px',
-                color: '#fff',
-                fontSize: '18px',
-                fontWeight: 500,
-                fontFamily: "'DM Mono', monospace",
-                letterSpacing: '0.2em',
-                padding: '15px 100px 15px 42px',
-                transition: 'border-color 0.2s, background 0.2s',
-                animation: joinError ? 'errorShake 0.4s ease' : 'none'
-              }}
-            />
-            <button
-              type="submit"
-              className="sb-join-btn"
-              style={{
-                position: 'absolute',
-                right: '6px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: canJoin ? 'rgba(255,255,255,0.9)' : 'transparent',
-                border: 'none',
-                color: canJoin ? '#080808' : 'transparent',
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                padding: '10px 18px',
-                borderRadius: '10px',
-                cursor: canJoin ? 'pointer' : 'default',
-                pointerEvents: canJoin ? 'auto' : 'none'
-              }}
-            >
-              Join
+          <form onSubmit={joinScreen} style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.85s both'
+          }}>
+
+            <button type="button" className="mobile-only sb-qr-btn" onClick={(e) => { setIsScanning(true); }}>
+              <QrCode size={18} />
+              <span>Scan Room QR</span>
             </button>
-            {joinError && (
+
+            <div style={{ position: 'relative' }}>
               <div style={{
                 position: 'absolute',
-                top: 'calc(100% + 8px)',
-                left: 0,
-                right: 0,
-                textAlign: 'center',
-                animation: 'fadeUp 0.25s ease both'
+                left: '16px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none'
               }}>
-                <span style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: '#e05555',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase'
-                }}>{joinError}</span>
+                <User size={16} color="rgba(255,255,255,0.2)" />
               </div>
-            )}
-          </div>
-        </form>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                maxLength={15}
+                required
+                className="sb-input"
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: '14px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  padding: '15px 16px 15px 42px',
+                  fontFamily: "'DM Sans', sans-serif",
+                  transition: 'border-color 0.2s, background 0.2s'
+                }}
+              />
+            </div>
 
-        <div style={{
-          marginTop: '52px',
-          display: 'flex',
-          gap: '6px',
-          alignItems: 'center',
-          animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 1s both'
-        }}>
-          {[0, 1, 2].map(i => (
-            <div key={i} style={{
-              width: '3px',
-              height: '3px',
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.15)',
-              animation: `dotBlink 2s ease-in-out ${i * 0.3}s infinite`
-            }} />
-          ))}
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                position: 'absolute',
+                left: '16px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none'
+              }}>
+                <Smartphone size={16} color="rgba(255,255,255,0.2)" />
+              </div>
+              <input
+                type="text"
+                placeholder="6-digit room code"
+                value={joinCode}
+                onChange={(e) => { setJoinCode(e.target.value.toUpperCase()); setJoinError(""); }}
+                maxLength={6}
+                required
+                className="sb-input"
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: joinError ? 'rgba(200,50,50,0.06)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${joinError ? 'rgba(200,50,50,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                  borderRadius: '14px',
+                  color: '#fff',
+                  fontSize: '18px',
+                  fontWeight: 500,
+                  fontFamily: "'DM Mono', monospace",
+                  letterSpacing: '0.2em',
+                  padding: '15px 100px 15px 42px',
+                  transition: 'border-color 0.2s, background 0.2s',
+                  animation: joinError ? 'errorShake 0.4s ease' : 'none'
+                }}
+              />
+              <button
+                type="submit"
+                className="sb-join-btn"
+                style={{
+                  position: 'absolute',
+                  right: '6px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: canJoin ? 'rgba(255,255,255,0.9)' : 'transparent',
+                  border: 'none',
+                  color: canJoin ? '#080808' : 'transparent',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  padding: '10px 18px',
+                  borderRadius: '10px',
+                  cursor: canJoin ? 'pointer' : 'default',
+                  pointerEvents: canJoin ? 'auto' : 'none'
+                }}
+              >
+                Join
+              </button>
+              {joinError && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  left: 0,
+                  right: 0,
+                  textAlign: 'center',
+                  animation: 'fadeUp 0.25s ease both'
+                }}>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    color: '#e05555',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase'
+                  }}>{joinError}</span>
+                </div>
+              )}
+            </div>
+          </form>
+
+          <div style={{
+            marginTop: '52px',
+            display: 'flex',
+            gap: '6px',
+            alignItems: 'center',
+            animation: 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 1s both'
+          }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{
+                width: '3px',
+                height: '3px',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.15)',
+                animation: `dotBlink 2s ease-in-out ${i * 0.3}s infinite`
+              }} />
+            ))}
+          </div>
         </div>
+      </div>
+
+      <div style={{
+        position: 'relative',
+        zIndex: 10,
+        width: '100%',
+        padding: '80px 24px',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        color: 'rgba(255,255,255,0.6)',
+        maxWidth: '800px',
+        lineHeight: '1.6',
+        boxSizing: 'border-box'
+      }}>
+        <h2 style={{ color: '#fff', fontSize: '20px', marginBottom: '16px', fontWeight: 600 }}>Control Presentations From Your Phone</h2>
+        <p style={{ marginBottom: '32px' }}>
+          <strong>SlideBridge lets you easily control and manage presentations from your phone</strong>, including uploading and removing files wirelessly. Turn any mobile device into a powerful presentation remote instantly.
+        </p>
+
+        <h3 style={{ color: '#fff', fontSize: '16px', marginBottom: '12px', fontWeight: 600 }}>How It Works</h3>
+        <ul style={{ marginBottom: '32px', paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Connect Instantly:</strong> Open SlideBridge on your main screen and scan the secure QR code with your phone. No software or downloads required.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Upload Wirelessly:</strong> Upload your PPT or PDF files directly from your phone to the main display.</li>
+          <li><strong>Take Control:</strong> Walk away from the laptop. Swipe, click, and manage your slides remotely while engaging with your audience.</li>
+        </ul>
+
+        <h3 style={{ color: '#fff', fontSize: '16px', marginBottom: '12px', fontWeight: 600 }}>Key Features</h3>
+        <ul style={{ marginBottom: '32px', paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Mobile Presentation Remote:</strong> Navigate through your slides smoothly without needing a physical clicker or standing trapped behind a podium.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Wireless File Management:</strong> Instantly upload presentations from your phone's local storage or cloud drive directly to the presentation screen.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Zero Latency Connection:</strong> Built on real-time web sockets to ensure the slide changes the exact millisecond you tap your screen.</li>
+          <li><strong>Secure Sessions:</strong> Unique room codes ensure that only you have control over your specific presentation dashboard.</li>
+        </ul>
       </div>
 
       <CreditPill />
