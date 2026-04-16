@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -9,52 +12,69 @@
   <!-- Primary SEO -->
   <title>SlideBridge – Control & Manage Presentations from Your Phone</title>
   <meta name="description"
-    content="SlideBridge lets you control presentations and manage files directly from your phone. Upload, remove, and present slides wirelessly without extra devices." />
+    content="SlideBridge lets you control presentations and manage files directly from your phone. Upload, remove, and present slides wirelessly without extra devices or apps." />
   <meta name="keywords"
-    content="presentation remote, control slides from phone, upload presentation remotely, wireless presentation tool, ppt remote" />
+    content="presentation remote, control slides from phone, upload presentation remotely, wireless presentation tool, ppt remote, phone clicker, QR presentation" />
   <meta name="author" content="SlideBridge" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://slidebridge.live/" />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="SlideBridge – Wireless Presentation Control" />
-  <meta property="og:description"
-    content="Control and manage your presentations from your phone. Upload, remove, and present slides wirelessly." />
-  <meta property="og:url" content="https://slidebridge.live/" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://slidebridge.live/og-image.png" />
+  <meta property="og:url" content="https://slidebridge.live/" />
   <meta property="og:site_name" content="SlideBridge" />
+  <meta property="og:title" content="SlideBridge – Wireless Presentation Control from Phone" />
+  <meta property="og:description"
+    content="Control and manage your presentations wirelessly from any phone. Upload slides, switch files, and present remotely without extra hardware." />
+  <meta property="og:image" content="https://slidebridge.live/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="SlideBridge – Control and manage presentations from your phone" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SlideBridge – Wireless Presentation Control" />
+  <meta name="twitter:title" content="SlideBridge – Wireless Presentation Control from Phone" />
   <meta name="twitter:description"
-    content="Control and manage your presentations from your phone. Upload, remove, and present slides wirelessly." />
+    content="Control and manage your presentations wirelessly from any phone. Upload slides, switch files, and present remotely without extra hardware." />
   <meta name="twitter:image" content="https://slidebridge.live/og-image.png" />
+  <meta name="twitter:image:alt" content="SlideBridge – Control and manage presentations from your phone" />
 
   <!-- PWA / Mobile -->
   <meta name="theme-color" content="#080808" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SlideBridge" />
 
   <!-- Structured Data -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "SlideBridge",
-    "url": "https://slidebridge.live",
-    "description": "Wireless presentation controller — control and manage slides from any phone using a 6-digit room code or QR scan.",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "All",
-    "author": {
-      "@type": "Person",
-      "name": "Pradyumn Pandhurnekar",
-      "url": "https://www.linkedin.com/in/pradyumnpandhurnekar/"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "SlideBridge",
+      "url": "https://slidebridge.live",
+      "description": "Wireless presentation controller — control and manage slides from any phone using a 6-digit room code or QR scan. No extra hardware needed.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript. Works on all modern browsers.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Pradyumn Pandhurnekar",
+        "url": "https://www.linkedin.com/in/pradyumnpandhurnekar/"
+      },
+      "image": "https://slidebridge.live/og-image.png"
     }
-  }
-  </script>
+    </script>
 </head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
