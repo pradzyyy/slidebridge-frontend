@@ -72,6 +72,11 @@ const Controller = ({ sessionId }) => {
     const [isEndingSession, setIsEndingSession] = useState(false);
     const [pressedBtn, setPressedBtn] = useState(null);
 
+    // --- SWIPE & PINCH STATE ---
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+    const [initialPinchDist, setInitialPinchDist] = useState(null);
+
     const hasJoined = useRef(false);
     const CLOUD_NAME = "dhkeim8bf";
     const UPLOAD_PRESET = "jpdqcfpp";
@@ -214,6 +219,66 @@ const Controller = ({ sessionId }) => {
         setTimeout(() => setPressedBtn(null), 180);
     };
 
+    // --- TOUCH GESTURE LOGIC ---
+    const handleTouchStart = (e) => {
+        if (e.touches.length === 1) {
+            // One finger swipe setup
+            setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            setTouchEnd(null);
+        } else if (e.touches.length === 2) {
+            // Two finger pinch setup
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            setInitialPinchDist(Math.hypot(dx, dy));
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        if (e.touches.length === 1) {
+            setTouchEnd({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+        } else if (e.touches.length === 2 && initialPinchDist) {
+            // Two finger pinch movement
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const currentDist = Math.hypot(dx, dy);
+
+            // Need 50px of movement to trigger a zoom step so it isn't too jittery
+            if (currentDist - initialPinchDist > 50) {
+                changeZoom(0.5); // Zoom In
+                setInitialPinchDist(currentDist); // Reset to prevent rapid firing
+            } else if (initialPinchDist - currentDist > 50) {
+                changeZoom(-0.5); // Zoom Out
+                setInitialPinchDist(currentDist);
+            }
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setInitialPinchDist(null); // Always reset pinch on lift
+
+        if (!touchStart || !touchEnd || !session?.activeFile) return;
+
+        const dx = touchStart.x - touchEnd.x;
+        const dy = touchStart.y - touchEnd.y;
+        const minSwipeDistance = 50; // Threshold
+
+        // Determine if movement was primarily horizontal or vertical
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal Swipes (Left/Right)
+            if (dx > minSwipeDistance) changePage(1);   // Swiped Left -> Next
+            if (dx < -minSwipeDistance) changePage(-1); // Swiped Right -> Prev
+        } else {
+            // Vertical Swipes (Up/Down)
+            if (dy > minSwipeDistance) changePage(1);   // Swiped Up -> Next
+            if (dy < -minSwipeDistance) changePage(-1); // Swiped Down -> Prev
+        }
+
+        // Reset
+        setTouchStart(null);
+        setTouchEnd(null);
+    };
+
+
     const css = `
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500;700&family=Poppins:ital,wght@0,400;0,700;0,800;1,700;1,800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
@@ -350,8 +415,14 @@ const Controller = ({ sessionId }) => {
         </div>
     );
 
+    // --- ATTACHED GESTURE LISTENERS TO MAIN WRAPPER ---
     return (
-        <div style={{ minHeight: '100vh', background: '#080808', color: '#fff', fontFamily: "'DM Sans',sans-serif", overflowX: 'hidden', paddingBottom: 140 }}>
+        <div
+            style={{ minHeight: '100vh', background: '#080808', color: '#fff', fontFamily: "'DM Sans',sans-serif", overflowX: 'hidden', paddingBottom: 140 }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
             <style>{css}</style>
 
             <Modal show={isEndingSession} icon={<Power size={26} color="#e05555" />} iconColor="200,50,50" title="End presentation?" body="This destroys the room and disconnects all remotes and displays immediately." onCancel={() => setIsEndingSession(false)} onConfirm={confirmEndSession} confirmLabel="End session" />
@@ -382,7 +453,7 @@ const Controller = ({ sessionId }) => {
             <div style={{ opacity: (!isNameConfirmed || fileToDelete || isEndingSession) ? 0.06 : 1, transition: 'opacity .3s', pointerEvents: (!isNameConfirmed || fileToDelete || isEndingSession) ? 'none' : 'auto' }}>
 
                 {uploading && (
-                    <div style={{ position: 'fixed', top: 24, left: '50%', zIndex: 100, background: 'rgba(14,14,18,.96)', border: '1px solid rgba(255,255,255,.08)', padding: '12px 20px', borderRadius: 100, display: 'flex', alignItems: 'center', gap: 10, backdropFilter: 'blur(20px)', animation: 'ctUploadPop .3s cubic-bezier(.16,1,.3,1) both' }}>
+                    <div style={{ position: 'fixed', top: 24, left: '50%', zIndex: 100, background: 'rgba(14,14,18,.96)', border: '1px solid rgba(255,255,255,.08)', padding: '12px 20px', borderRadius: 100, display: 'flex', alignItems: 'center', gap: 10, backdropFilter: 'blur(20px)', animation: 'ctUploadPop .3s cubic-bezier(.16,1,.3,1) both', transform: 'translateX(-50%)' }}>
                         <Loader2 size={14} color="rgba(180,180,255,.7)" style={{ animation: 'ctSpin 1s linear infinite' }} />
                         <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.5)', letterSpacing: '.15em', textTransform: 'uppercase' }}>{status}</span>
                     </div>
@@ -528,11 +599,10 @@ const Controller = ({ sessionId }) => {
                 </div>
             </div>
 
-            {/* MOVED TO BOTTOM AND REPLACED WITH DEDICATED MOBILE VERSION */}
             <MobileCreditPill />
 
             {session?.activeFile && (
-                <div style={{ position: 'fixed', bottom: 24, left: '50%', zIndex: 50, width: 'calc(100% - 40px)', maxWidth: 340, background: 'rgba(10,10,14,.93)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 100, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: 'ctBarIn .5s cubic-bezier(.16,1,.3,1) both' }}>
+                <div style={{ position: 'fixed', bottom: 24, left: '50%', zIndex: 50, width: 'calc(100% - 40px)', maxWidth: 340, background: 'rgba(10,10,14,.93)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 100, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: 'ctBarIn .5s cubic-bezier(.16,1,.3,1) both', transform: 'translateX(-50%)' }}>
 
                     {session.activeFile.type.includes('pdf') && (<>
                         <button onClick={() => springPress('prev', () => changePage(-1))} style={{ width: 60, height: 60, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.06)', color: 'rgba(255,255,255,.7)', cursor: 'pointer', transition: 'transform .15s', transform: pressedBtn === 'prev' ? 'scale(.85)' : 'scale(1)' }}>
