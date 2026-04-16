@@ -371,6 +371,92 @@ export const CreditPill = ({ position = 'bottom-center' }) => {
   );
 };
 
+const GuideModal = () => {
+  const [visible, setVisible] = useState(false);
+  const [closed, setClosed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!visible || closed) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 999999,
+        background: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        animation: 'fadeUp 0.4s ease-out forwards',
+        padding: '24px'
+      }}
+      onClick={() => setClosed(true)}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '340px',
+          background: 'rgba(18, 18, 24, 0.95)',
+          border: '1px solid rgba(140, 140, 255, 0.25)',
+          borderRadius: '24px',
+          padding: '32px 24px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 30px rgba(140, 140, 255, 0.1)',
+          fontFamily: "'DM Sans', sans-serif",
+          position: 'relative'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h4 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginTop: 0, marginBottom: '20px', letterSpacing: '0.02em', textAlign: 'center' }}>
+          Quick Start Guide
+        </h4>
+
+        <ol style={{
+          margin: '0 0 28px 0',
+          paddingLeft: '20px',
+          color: 'rgba(255,255,255,0.7)',
+          fontSize: '14px',
+          lineHeight: '1.7',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          <li><strong style={{ color: '#fff' }}>Scan QR</strong> or enter code to connect.</li>
+          <li><strong style={{ color: '#fff' }}>Upload files</strong> via the + button.</li>
+          <li><strong style={{ color: '#fff' }}>Tap a file</strong> to push it to the display.</li>
+          <li>Use the <strong style={{ color: '#fff' }}>bottom remote</strong> to slide through.</li>
+        </ol>
+
+        <button
+          onClick={() => setClosed(true)}
+          style={{
+            width: '100%',
+            background: 'rgba(140, 140, 255, 0.1)',
+            border: '1px solid rgba(140, 140, 255, 0.2)',
+            borderRadius: '12px',
+            padding: '14px',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'background 0.2s',
+            fontFamily: "'DM Sans', sans-serif"
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(140, 140, 255, 0.2)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(140, 140, 255, 0.1)'}
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const [mode, setMode] = useState(null);
   const [sessionId, setSessionId] = useState(null);
@@ -385,6 +471,20 @@ const App = () => {
   const [scanSuccess, setScanSuccess] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+
+  const footerRef = useRef(null);
+  const [footerVisible, setFooterVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setFooterVisible(true);
+      },
+      { threshold: 0.08 }
+    );
+    if (footerRef.current) observer.observe(footerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -851,6 +951,7 @@ const App = () => {
         </div>
       )}
 
+      <GuideModal />
       <GlowOrbs />
       <Grid />
       <ParticleField />
@@ -1109,17 +1210,24 @@ const App = () => {
         </div>
       </div>
 
-      <div style={{
-        position: 'relative',
-        zIndex: 10,
-        width: '100%',
-        padding: '80px 24px',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
-        color: 'rgba(255,255,255,0.6)',
-        maxWidth: '800px',
-        lineHeight: '1.6',
-        boxSizing: 'border-box'
-      }}>
+      <div
+        ref={footerRef}
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          width: '100%',
+          padding: '80px 24px',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          color: 'rgba(255,255,255,0.6)',
+          maxWidth: '800px',
+          lineHeight: '1.6',
+          boxSizing: 'border-box',
+          transformOrigin: 'top center',
+          transform: footerVisible ? 'scaleY(1) translateY(0)' : 'scaleY(0.06) translateY(-47%)',
+          opacity: footerVisible ? 1 : 0,
+          transition: 'transform 0.85s cubic-bezier(0.16,1,0.3,1), opacity 0.6s ease',
+        }}
+      >
         <h2 style={{ color: '#fff', fontSize: '20px', marginBottom: '16px', fontWeight: 600 }}>Control Presentations From Your Phone</h2>
         <p style={{ marginBottom: '32px' }}>
           <strong>SlideBridge lets you easily control and manage presentations from your phone</strong>, including uploading and removing files wirelessly. Turn any mobile device into a powerful presentation remote instantly.
