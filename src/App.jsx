@@ -401,36 +401,70 @@ const GuideModal = () => {
       <div
         style={{
           width: '100%',
-          maxWidth: '340px',
+          maxWidth: '520px',
           background: 'rgba(18, 18, 24, 0.95)',
           border: '1px solid rgba(140, 140, 255, 0.25)',
           borderRadius: '24px',
-          padding: '32px 24px',
+          padding: '32px 28px',
           boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 30px rgba(140, 140, 255, 0.1)',
           fontFamily: "'DM Sans', sans-serif",
-          position: 'relative'
+          position: 'relative',
+          cursor: 'default'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h4 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginTop: 0, marginBottom: '20px', letterSpacing: '0.02em', textAlign: 'center' }}>
+        <h4 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginTop: 0, marginBottom: '24px', letterSpacing: '0.02em', textAlign: 'center' }}>
           Quick Start Guide
         </h4>
 
-        <ol style={{
-          margin: '0 0 28px 0',
-          paddingLeft: '20px',
-          color: 'rgba(255,255,255,0.7)',
-          fontSize: '14px',
-          lineHeight: '1.7',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
-        }}>
-          <li><strong style={{ color: '#fff' }}>Scan QR</strong> or enter code to connect.</li>
-          <li><strong style={{ color: '#fff' }}>Upload files</strong> via the + button.</li>
-          <li><strong style={{ color: '#fff' }}>Tap a file</strong> to push it to the display.</li>
-          <li>Use the <strong style={{ color: '#fff' }}>bottom remote</strong> to slide through.</li>
-        </ol>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', marginBottom: '28px' }}>
+
+          {/* Display Side */}
+          <div style={{ flex: '1 1 200px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <MonitorPlay size={18} color="rgba(140, 140, 255, 0.8)" />
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: '15px' }}>On the Display</span>
+            </div>
+            <ul style={{
+              margin: 0,
+              paddingLeft: '20px',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '13px',
+              lineHeight: '1.6',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <li>Click <strong style={{ color: '#fff' }}>Launch big screen</strong> to open the room.</li>
+              <li>Leave the tab open on the screen you want to present on.</li>
+            </ul>
+          </div>
+
+          <div className="sb-modal-divider" />
+
+          {/* Phone Side */}
+          <div style={{ flex: '1 1 200px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <Smartphone size={18} color="rgba(140, 140, 255, 0.8)" />
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: '15px' }}>On your Phone</span>
+            </div>
+            <ul style={{
+              margin: 0,
+              paddingLeft: '20px',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '13px',
+              lineHeight: '1.6',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <li><strong style={{ color: '#fff' }}>Scan the QR</strong> shown on the display.</li>
+              <li><strong style={{ color: '#fff' }}>Upload</strong> files and tap to push them live.</li>
+              <li>Use the <strong style={{ color: '#fff' }}>remote</strong> to navigate slides.</li>
+            </ul>
+          </div>
+
+        </div>
 
         <button
           onClick={() => setClosed(true)}
@@ -793,6 +827,19 @@ const App = () => {
             display: none !important; 
         }
         
+        .sb-modal-divider {
+            width: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        
+        @media (max-width: 520px) {
+            .sb-modal-divider {
+                width: 100%;
+                height: 1px;
+                margin: 4px 0;
+            }
+        }
+        
         @media (max-width: 768px) { 
             .mobile-only { 
                 display: flex !important; 
@@ -952,10 +999,6 @@ const App = () => {
       )}
 
       <GuideModal />
-      <GlowOrbs />
-      <Grid />
-      <ParticleField />
-      <ScanLine />
 
       <div style={{
         minHeight: '100vh',
